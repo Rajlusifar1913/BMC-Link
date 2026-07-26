@@ -1,0 +1,42 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.6.2
+2 info using node@v24.12.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:D:\TNU_CSE_cyber_security\Internships\XetaLabs\BMC-Link\.npmrc
+5 silly config load:file:C:\Users\fossi\.npmrc
+6 silly config load:file:D:\TNU_CSE_cyber_security\Internships\XetaLabs\BMC-Link\%APPDATA%\npm\etc\npmrc
+7 verbose title npm exec prisma format
+8 verbose argv "exec" "--" "prisma" "format"
+9 verbose logfile logs-max:10 dir:D:\TNU_CSE_cyber_security\Internships\XetaLabs\BMC-Link\%APPDATA%\npm-cache\_logs\2026-07-26T19_13_03_068Z-
+10 verbose logfile D:\TNU_CSE_cyber_security\Internships\XetaLabs\BMC-Link\%APPDATA%\npm-cache\_logs\2026-07-26T19_13_03_068Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:2348810240 maxSize:587202560 maxEntrySize:293601280
+13 http fetch GET 200 https://registry.npmjs.org/npm 1663ms
+14 http fetch GET 200 https://registry.npmjs.org/prisma 9133ms (cache miss)
+15 silly packumentCache heap:2348810240 maxSize:587202560 maxEntrySize:293601280
+16 verbose Could not read global path D:\TNU_CSE_cyber_security\Internships\XetaLabs\BMC-Link\%APPDATA%\npm, ignoring
+17 silly packumentCache heap:2348810240 maxSize:587202560 maxEntrySize:293601280
+18 verbose stack Error: canceled
+18 verbose stack     at Interface.<anonymous> (C:\Program Files\nodejs\node_modules\npm\node_modules\read\dist\commonjs\read.js:89:21)
+18 verbose stack     at Interface.emit (node:events:508:28)
+18 verbose stack     at [_ttyWrite] [as _ttyWrite] (node:internal/readline/interface:1327:18)
+18 verbose stack     at ReadStream.onkeypress (node:internal/readline/interface:284:20)
+18 verbose stack     at ReadStream.emit (node:events:508:28)
+18 verbose stack     at emitKeys (node:internal/readline/utils:371:14)
+18 verbose stack     at emitKeys.next (<anonymous>)
+18 verbose stack     at ReadStream.onData (node:internal/readline/emitKeypressEvents:64:36)
+18 verbose stack     at ReadStream.emit (node:events:508:28)
+18 verbose stack     at addChunk (node:internal/streams/readable:559:12)
+19 error canceled
+20 verbose cwd D:\TNU_CSE_cyber_security\Internships\XetaLabs\BMC-Link
+21 verbose os Windows_NT 10.0.26220
+22 verbose node v24.12.0
+23 verbose npm  v11.6.2
+24 notice
+24 notice New [33mminor[39m version of npm available! [33m11.6.2[39m -> [34m11.18.0[39m
+24 notice Changelog: [34mhttps://github.com/npm/cli/releases/tag/v11.18.0[39m
+24 notice To update run: [4mnpm install -g npm@11.18.0[24m
+24 notice  { force: true, Symbol(proc-log.meta): true }
+25 verbose exit 1
+26 verbose code 1
+27 error A complete log of this run can be found in: D:\TNU_CSE_cyber_security\Internships\XetaLabs\BMC-Link\%APPDATA%\npm-cache\_logs\2026-07-26T19_13_03_068Z-debug-0.log

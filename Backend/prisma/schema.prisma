@@ -1,0 +1,624 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  CREATOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum PermissionLevel {
+  SUPER_ADMIN
+  SUPPORT_ADMIN
+  FINANCE_ADMIN
+}
+
+enum AdminStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum LinkType {
+  WEBSITE
+  YOUTUBE
+  INSTAGRAM
+  FACEBOOK
+  TWITTER
+  GITHUB
+  CUSTOM
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESSFUL
+  FAILED
+  REFUNDED
+}
+
+enum PaymentType {
+  DONATION
+  MEMBERSHIP
+  PREMIUM_SUBSCRIPTION
+  PRODUCT_PURCHASE
+}
+
+enum MembershipStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+}
+
+enum PremiumStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ProductVisibility {
+  PUBLIC
+  PRIVATE
+  UNLISTED
+}
+
+model User {
+  id             String     @id @default(uuid())
+  authId         String?    @unique @map("auth_id")
+  email          String     @unique
+  name           String?
+  phone          String?
+  profilePicture String?    @map("profile_picture")
+  role           UserRole   @default(CREATOR)
+  status         UserStatus @default(ACTIVE)
+  isVerified     Boolean    @default(false) @map("is_verified")
+  timezone       String?
+  language       String?
+  lastLogin      DateTime?  @map("last_login")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  creatorProfile  CreatorProfile?
+  creatorSettings CreatorSetting?
+  admin           Admin?          @relation("AdminUser")
+
+  socialLinks   SocialLink[]
+  customDomains CustomDomain[]
+
+  uploadedMedia Media[]
+  notifications Notification[]
+
+  apiKeys       ApiKey[]
+  oauthAccounts OAuthAccount[]
+  auditLogs     AuditLog[]
+
+  links        Link[]
+  profileViews ProfileView[]
+  analytics    CreatorAnalytics?
+
+  payments Payment[]
+
+  receivedDonations Donation[] @relation("CreatorDonations")
+  givenDonations    Donation[] @relation("SupporterDonations")
+
+  membershipPlans MembershipPlan[]
+  memberships     Membership[]
+
+  premiumSubscriptions PremiumSubscription[]
+
+  digitalProducts DigitalProduct[]
+  purchases       Purchase[]
+
+  @@index([email])
+  @@index([status])
+  @@map("users")
+}
+
+model Theme {
+  id              String @id @default(uuid())
+  name            String @unique
+  primaryColor    String @map("primary_color")
+  secondaryColor  String @map("secondary_color")
+  backgroundColor String @map("background_color")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  creatorProfiles CreatorProfile[]
+
+  @@map("themes")
+}
+
+model CreatorProfile {
+  id          String  @id @default(uuid())
+  userId      String  @unique @map("user_id")
+  username    String  @unique
+  headline    String?
+  bio         String?
+  avatar      String?
+  coverImage  String? @map("cover_image")
+  website     String?
+  accentColor String? @map("accent_color")
+  themeId     String? @map("theme_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  theme Theme? @relation(fields: [themeId], references: [id])
+
+  @@index([username])
+  @@map("creator_profiles")
+}
+
+model CreatorSetting {
+  id               String  @id @default(uuid())
+  creatorId        String  @unique @map("creator_id")
+  allowDonations   Boolean @default(true) @map("allow_donations")
+  allowMemberships Boolean @default(true) @map("allow_memberships")
+  allowProducts    Boolean @default(true) @map("allow_products")
+  showEmail        Boolean @default(false) @map("show_email")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  creator User @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@map("creator_settings")
+}
+
+model SocialLink {
+  id        String @id @default(uuid())
+  creatorId String @map("creator_id")
+  platform  String
+  url       String
+
+  createdAt DateTime @default(now()) @map("created_at")
+  creator   User     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId])
+  @@map("social_links")
+}
+
+model CustomDomain {
+  id        String  @id @default(uuid())
+  creatorId String  @map("creator_id")
+  domain    String  @unique
+  verified  Boolean @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  creator User @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId])
+  @@map("custom_domains")
+}
+
+model Media {
+  id              String  @id @default(uuid())
+  ownerId         String  @map("owner_id")
+  fileName        String  @map("file_name")
+  fileUrl         String  @map("file_url")
+  mimeType        String  @map("mime_type")
+  size            BigInt
+  storageProvider String  @map("storage_provider")
+  publicId        String? @map("public_id")
+  folder          String?
+
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+  @@map("media")
+}
+
+model Notification {
+  id     String  @id @default(uuid())
+  userId String  @map("user_id")
+  title  String
+  body   String
+  isRead Boolean @default(false) @map("is_read")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("notifications")
+}
+
+model ApiKey {
+  id         String  @id @default(uuid())
+  userId     String  @map("user_id")
+  apiKeyHash String  @map("api_key_hash")
+  isActive   Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("api_keys")
+}
+
+model OAuthAccount {
+  id             String @id @default(uuid())
+  userId         String @map("user_id")
+  provider       String
+  providerUserId String @map("provider_user_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+  @@map("oauth_accounts")
+}
+
+model AuditLog {
+  id        String  @id @default(uuid())
+  userId    String? @map("user_id")
+  action    String
+  entity    String
+  entityId  String? @map("entity_id")
+  oldData   Json?   @map("old_data")
+  newData   Json?   @map("new_data")
+  ip        String?
+  userAgent String? @map("user_agent")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@map("audit_logs")
+}
+
+model Admin {
+  id              String          @id @default(uuid())
+  userId          String          @unique @map("user_id")
+  permissionLevel PermissionLevel @map("permission_level")
+  status          AdminStatus     @default(ACTIVE)
+  createdBy       String?         @map("created_by")
+  lastLogin       DateTime?       @map("last_login")
+
+  user User @relation("AdminUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  creator Admin? @relation("AdminCreator", fields: [createdBy], references: [id])
+
+  createdAdmins Admin[] @relation("AdminCreator")
+
+  @@map("admins")
+}
+
+model Link {
+  id         String    @id @default(uuid())
+  creatorId  String    @map("creator_id")
+  title      String?
+  url        String
+  type       LinkType
+  icon       String?
+  thumbnail  String?
+  position   Int?
+  clickCount Int       @default(0) @map("click_count")
+  isFeatured Boolean   @default(false) @map("is_featured")
+  isActive   Boolean   @default(true) @map("is_active")
+  startDate  DateTime? @map("start_date")
+  endDate    DateTime? @map("end_date")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  creator User @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  clicks LinkClick[]
+
+  @@index([creatorId])
+  @@index([position])
+  @@map("links")
+}
+
+model LinkClick {
+  id        String  @id @default(uuid())
+  linkId    String  @map("link_id")
+  visitorIp String? @map("visitor_ip")
+
+  clickedAt DateTime @default(now()) @map("clicked_at")
+
+  link Link @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@index([linkId])
+  @@map("link_clicks")
+}
+
+model ProfileView {
+  id        String  @id @default(uuid())
+  creatorId String  @map("creator_id")
+  viewerIp  String? @map("viewer_ip")
+
+  viewedAt DateTime @default(now()) @map("viewed_at")
+
+  creator User @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId])
+  @@map("profile_views")
+}
+
+model CreatorAnalytics {
+  id                String  @id @default(uuid())
+  creatorId         String  @unique @map("creator_id")
+  totalProfileViews Int     @default(0) @map("total_profile_views")
+  totalLinkClicks   Int     @default(0) @map("total_link_clicks")
+  totalDonations    Decimal @default(0) @map("total_donations") @db.Decimal(10, 2)
+  totalSales        Decimal @default(0) @map("total_sales") @db.Decimal(10, 2)
+  totalRevenue      Decimal @default(0) @map("total_revenue") @db.Decimal(10, 2)
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  creator User @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@map("creator_analytics")
+}
+
+model PaymentGateway {
+  id   String @id @default(uuid())
+  name String @unique
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  payments Payment[]
+
+  @@map("payment_gateways")
+}
+
+model Payment {
+  id               String        @id @default(uuid())
+  userId           String        @map("user_id")
+  paymentType      PaymentType   @map("payment_type")
+  amount           Decimal       @db.Decimal(10, 2)
+  currency         String        @db.Char(3)
+  paymentStatus    PaymentStatus @default(PENDING) @map("payment_status")
+  gatewayId        String?       @map("gateway_id")
+  gatewayPaymentId String?       @map("gateway_payment_id")
+  orderId          String?       @map("order_id")
+  gatewayOrderId   String?       @map("gateway_order_id")
+  gatewaySignature String?       @map("gateway_signature")
+  gatewayFee       Decimal?      @map("gateway_fee") @db.Decimal(10, 2)
+  tax              Decimal?      @db.Decimal(10, 2)
+  refundAmount     Decimal?      @map("refund_amount") @db.Decimal(10, 2)
+  metadata         Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  gateway PaymentGateway? @relation(fields: [gatewayId], references: [id])
+
+  donation Donation?
+
+  membership Membership?
+
+  premiumSubscription PremiumSubscription?
+
+  purchase Purchase?
+
+  @@index([userId])
+  @@index([gatewayId])
+  @@map("payments")
+}
+
+model Donation {
+  id          String  @id @default(uuid())
+  creatorId   String  @map("creator_id")
+  paymentId   String  @unique @map("payment_id")
+  supporterId String? @map("supporter_id")
+  displayName String? @map("display_name")
+  email       String?
+  isAnonymous Boolean @default(false) @map("is_anonymous")
+  message     String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  creator User @relation("CreatorDonations", fields: [creatorId], references: [id], onDelete: Cascade)
+
+  supporter User? @relation("SupporterDonations", fields: [supporterId], references: [id])
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId])
+  @@index([supporterId])
+  @@map("donations")
+}
+
+model MembershipPlan {
+  id           String  @id @default(uuid())
+  creatorId    String  @map("creator_id")
+  name         String
+  description  String?
+  price        Decimal @db.Decimal(10, 2)
+  durationDays Int     @map("duration_days")
+  isActive     Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  creator User @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  memberships Membership[]
+
+  @@index([creatorId])
+  @@map("membership_plans")
+}
+
+model Membership {
+  id             String           @id @default(uuid())
+  creatorId      String           @map("creator_id")
+  planId         String           @map("plan_id")
+  paymentId      String           @unique @map("payment_id")
+  memberName     String?          @map("member_name")
+  memberEmail    String?          @map("member_email")
+  status         MembershipStatus @default(ACTIVE)
+  startDate      DateTime?        @map("start_date") @db.Date
+  endDate        DateTime?        @map("end_date") @db.Date
+  subscriptionId String?          @map("subscription_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  creator User @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  plan MembershipPlan @relation(fields: [planId], references: [id])
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId])
+  @@index([planId])
+  @@map("memberships")
+}
+
+model PremiumPlan {
+  id           String  @id @default(uuid())
+  name         String
+  price        Decimal @db.Decimal(10, 2)
+  durationDays Int     @map("duration_days")
+  isActive     Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  subscriptions PremiumSubscription[]
+
+  @@map("premium_plans")
+}
+
+model PremiumSubscription {
+  id         String        @id @default(uuid())
+  userId     String        @map("user_id")
+  paymentId  String        @unique @map("payment_id")
+  planId     String        @map("plan_id")
+  status     PremiumStatus @default(ACTIVE)
+  startDate  DateTime?     @map("start_date") @db.Date
+  expiryDate DateTime?     @map("expiry_date") @db.Date
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  plan PremiumPlan @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+  @@index([planId])
+  @@map("premium_subscriptions")
+}
+
+model ProductCategory {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  slug        String  @unique
+  description String?
+
+  products DigitalProduct[]
+
+  @@map("product_categories")
+}
+
+model ProductTag {
+  id   String @id @default(uuid())
+  name String @unique
+  slug String @unique
+
+  products ProductTagMap[]
+
+  @@map("product_tags")
+}
+
+model DigitalProduct {
+  id            String            @id @default(uuid())
+  creatorId     String            @map("creator_id")
+  title         String
+  description   String?
+  price         Decimal           @db.Decimal(10, 2)
+  fileUrl       String            @map("file_url")
+  thumbnail     String?
+  slug          String            @unique
+  categoryId    String?           @map("category_id")
+  visibility    ProductVisibility @default(PUBLIC)
+  previewUrl    String?           @map("preview_url")
+  downloadLimit Int?              @map("download_limit")
+  status        ProductStatus     @default(DRAFT)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  creator User @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  category ProductCategory? @relation(fields: [categoryId], references: [id])
+
+  purchases Purchase[]
+
+  tags ProductTagMap[]
+
+  @@index([creatorId])
+  @@index([categoryId])
+  @@map("digital_products")
+}
+
+model ProductTagMap {
+  productId String @map("product_id")
+  tagId     String @map("tag_id")
+
+  product DigitalProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag     ProductTag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([productId, tagId])
+  @@map("product_tag_map")
+}
+
+model Purchase {
+  id            String  @id @default(uuid())
+  productId     String  @map("product_id")
+  paymentId     String  @unique @map("payment_id")
+  buyerName     String? @map("buyer_name")
+  buyerEmail    String? @map("buyer_email")
+  buyerId       String? @map("buyer_id")
+  downloadCount Int     @default(0) @map("download_count")
+  licenseKey    String? @map("license_key")
+
+  expiresAt   DateTime? @map("expires_at")
+  purchasedAt DateTime? @map("purchased_at")
+
+  product DigitalProduct @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  buyer User? @relation(fields: [buyerId], references: [id])
+
+  @@index([productId])
+  @@index([buyerId])
+  @@map("purchases")
+}
