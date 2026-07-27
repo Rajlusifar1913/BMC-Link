@@ -13,6 +13,9 @@ const validate = (schema) => {
 
             next();
         } catch (error) {
+            if (error instanceof z.ZodError) {
+                throw new ApiError(400, "Validation error", error.errors);
+            }
             next(error);
         }
     };

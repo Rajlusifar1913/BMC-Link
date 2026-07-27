@@ -28,16 +28,28 @@ class AccountRepository {
             where: {
                 username,
             },
-            include: {
-                user: {
+            select: {
+                id: true,
+                username: true,
+                headline: true,
+                bio: true,
+                avatar: true,
+                coverImage: true,
+                website: true,
+                accentColor: true,
+                theme: {
                     select: {
                         id: true,
-                        name: true,
-                        profilePicture: true,
-                    },
+                        name: true
+                    }
                 },
-                theme: true,
-            },
+                user: {
+                    select: {
+                        name: true,
+                        profilePicture: true
+                    }
+                }
+            }
         });
     }
 
@@ -52,21 +64,25 @@ class AccountRepository {
         });
     }
 
-    async updateUser(userId, data) {
-        return prisma.user.update({
-            where: {
-                id: userId,
-            },
-            data,
-        });
-    }
+    async updateProfileTransaction(userId, userUpdateData, creatorProfileUpdateData) {
+        return prisma.$transaction(async (tx) => {
+            let updatedUser, updatedCreatorProfile;
 
-    async updateCreatorProfile(userId, data) {
-        return prisma.creatorProfile.update({
-            where: {
-                userId,
-            },
-            data,
+            if (Object.keys(userUpdateData).length > 0) {
+                updatedUser = await tx.user.update({
+                    where: { id: userId },
+                    data: userUpdateData,
+                });
+            }
+
+            if (Object.keys(creatorProfileUpdateData).length > 0) {
+                updatedCreatorProfile = await tx.creatorProfile.update({
+                    where: { userId },
+                    data: creatorProfileUpdateData,
+                });
+            }
+
+            return { updatedUser, updatedCreatorProfile };
         });
     }
 }

@@ -1,5 +1,6 @@
 import { ApiError } from "../../utils/ApiError.js";
 import accountRepository from "./account.repository.js";
+import prisma from "../../config/prisma.js";
 
 class AccountService {
 
@@ -48,23 +49,51 @@ class AccountService {
             themeId,
         } = payload;
 
-        await accountRepository.updateUser(userId, {
-            name,
-            phone,
-            profilePicture,
-            timezone,
-            language,
-        });
+        // Filter out undefined values to avoid overwriting existing data with nulls
+        const userUpdateData = Object.fromEntries(
+            Object.entries({
+                name,
+                phone,
+                profilePicture,
+                timezone,
+                language,
+            }).filter(([_, v]) => v !== undefined)
+        );
 
-        await accountRepository.updateCreatorProfile(userId, {
-            headline,
-            bio,
-            avatar,
-            coverImage,
-            website,
-            accentColor,
-            themeId,
-        });
+        const creatorProfileUpdateData = Object.fromEntries(
+            Object.entries({
+                headline,
+                bio,
+                avatar,
+                coverImage,
+                website,
+                accentColor,
+                themeId,
+            }).filter(([_, v]) => v !== undefined)
+        );
+
+        if (
+            Object.keys(userUpdateData).length === 0 &&
+            Object.keys(creatorProfileUpdateData).length === 0
+        ) {
+            throw new ApiError(400, "No fields provided for update");
+        }
+
+        if (themeId) {
+            const theme = await prisma.theme.findUnique({
+                where: { id: themeId }
+            });
+
+            if (!theme) {
+                throw new ApiError(404, "Theme not found");
+            }
+        }
+
+        await accountRepository.updateProfileTransaction(
+            userId,
+            userUpdateData,
+            creatorProfileUpdateData
+        );
 
         return this.getProfile(userId);
     }
