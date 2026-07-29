@@ -1,10 +1,14 @@
+import { z } from "zod";
+
+import { ApiError } from "../utils/ApiError.js";
+
 const validate = (schema) => {
     return async (req, res, next) => {
         try {
             const parsed = await schema.parseAsync({
-                body: req.body,
-                params: req.params,
-                query: req.query,
+                body: req.body ?? {},
+                params: req.params ?? {},
+                query: req.query ?? {},
             });
 
             req.body = parsed.body;

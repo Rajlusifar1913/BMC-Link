@@ -2,6 +2,8 @@ import express from "express";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import accountRouter from "../modules/account/account.routes.js";
 import linkRouter from "../modules/links/links.routes.js";
+import authRoutes from "../modules/auth/auth.routes.js";
+
 
 const router = express.Router();
 
@@ -11,7 +13,8 @@ router.route("/health").get((req, res) => {
     );
 });
 
+router.use("/auth", authRoutes);
 router.use("/account", accountRouter);
 router.use("/links", linkRouter);
 
-export default router;
+export default router;
