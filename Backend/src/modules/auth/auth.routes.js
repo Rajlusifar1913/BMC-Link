@@ -8,12 +8,6 @@ import { authenticate } from "../../middlewares/auth.middleware.js";
 
 const router = Router();
 
-/*
-|--------------------------------------------------------------------------
-| Google OAuth
-|--------------------------------------------------------------------------
-*/
-
 router.get(
     "/google",
     passport.authenticate("google", {
@@ -31,40 +25,18 @@ router.get(
     authController.googleSuccess
 );
 
-/*
-|--------------------------------------------------------------------------
-| Auth
-|--------------------------------------------------------------------------
-*/
-
 router.post(
     "/refresh",
     validate(refreshTokenSchema),
     authController.refresh
 );
 
-router.get(
-    "/refresh",
-    authController.refresh
-);
-
 router.post(
     "/logout",
     authController.logout
 );
 
-router.get(
-    "/logout",
-    authController.logout
-);
-
 router.post(
-    "/logout-all",
-    authenticate,
-    authController.logoutAll
-);
-
-router.get(
     "/logout-all",
     authenticate,
     authController.logoutAll

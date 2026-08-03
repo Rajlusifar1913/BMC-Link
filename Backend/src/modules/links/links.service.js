@@ -22,17 +22,23 @@ class LinkService {
             endDate,
         } = payload;
 
-        const finalPosition =
-            position ?? (await linkRepository.getMaxPosition(creatorId)) + 1;
+        const existingLink = await linkRepository.findByUserIdAndUrl(
+            creatorId,
+            url
+        );
 
-        return linkRepository.create({
+        if (existingLink) {
+            throw new ApiError(409, "This link already exists.");
+        }
+
+        return linkRepository.createWithPosition(creatorId, {
             creatorId,
             title,
             url,
             type,
             icon,
             thumbnail,
-            position: finalPosition,
+            position,
             isFeatured,
             isActive,
             startDate,
@@ -114,9 +120,14 @@ class LinkService {
 
         const link = await this.getLink(creatorId, id);
 
-        return linkRepository.update(id, {
+        console.log("Before:", link.isActive);
+
+        const updated = await linkRepository.update(id, {
             isActive: !link.isActive,
         });
+        console.log("After:", updated.isActive);
+
+        return updated;
     }
 
     async duplicateLink(creatorId, id) {
@@ -152,12 +163,19 @@ class LinkService {
         for (const item of links) {
             await this.getLink(creatorId, item.id);
         }
-        return linkRepository.reorderLinks(links);
+
+        return linkRepository.reorderLinks(creatorId, links);
     }
 
     async getPublicLinks(username) {
 
-        return linkRepository.findPublicLinks(username);
+        const profile = await linkRepository.findPublicLinks(username);
+
+        if (!profile) {
+            throw new ApiError(404, "Creator not found");
+        }
+
+        return profile;
     }
 
     async incrementClick(id) {

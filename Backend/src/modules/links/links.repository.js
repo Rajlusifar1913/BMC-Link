@@ -25,6 +25,18 @@ class LinkRepository {
         });
     }
 
+    async findByUserIdAndUrl(creatorId, url) {
+        return prisma.link.findFirst({
+            where: {
+                creatorId,
+                url
+            },
+            select: {
+                id: true,
+            },
+        });
+    }
+
     async findByCreator(creatorId, { skip = 0, limit = 10, where = {}, orderBy = { position: "asc" } }) {
         return prisma.link.findMany({
             where: {
@@ -94,32 +106,112 @@ class LinkRepository {
         return lastLink?.position ?? 0;
     }
 
-    async findPublicLinks(username) {
-        return prisma.link.findMany({
+    async incrementPositionsFrom(creatorId, fromPosition) {
+        return prisma.link.updateMany({
             where: {
-                isActive: true,
-                creator: {
-                    creatorProfile: {
-                        username,
-                    },
+                creatorId,
+                position: {
+                    gte: fromPosition,
                 },
             },
-            orderBy: {
-                position: "asc",
+            data: {
+                position: {
+                    increment: 1,
+                },
             },
-            include: {
-                creator: {
+        });
+    }
+
+    async decrementPositionsAfter(creatorId, fromPosition) {
+        return prisma.link.updateMany({
+            where: {
+                creatorId,
+                position: {
+                    gt: fromPosition,
+                },
+            },
+            data: {
+                position: {
+                    decrement: 1,
+                },
+            },
+        });
+    }
+
+    async normalizePositions(creatorId, links) {
+        return prisma.$transaction(
+            links.map((item, index) =>
+                prisma.link.update({
+                    where: {
+                        id: item.id,
+                    },
+                    data: {
+                        position: index + 1,
+                    },
+                })
+            )
+        );
+    }
+
+    async findPublicLinks(username) {
+        return prisma.user.findFirst({
+            where: {
+                creatorProfile: {
+                    username,
+                },
+            },
+            select: {
+                id: true,
+                name: true,
+                profilePicture: true,
+
+                creatorProfile: {
+                    select: {
+                        username: true,
+                        headline: true,
+                        bio: true,
+                        avatar: true,
+                        coverImage: true,
+                        accentColor: true,
+                        website: true,
+                    },
+                },
+
+                links: {
+                    where: {
+                        isActive: true,
+                        OR: [
+                            {
+                                startDate: null,
+                                endDate: null,
+                            },
+                            {
+                                startDate: {
+                                    lte: new Date(),
+                                },
+                                OR: [
+                                    { endDate: null },
+                                    {
+                                        endDate: {
+                                            gte: new Date(),
+                                        },
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    orderBy: {
+                        position: "asc",
+                    },
                     select: {
                         id: true,
-                        name: true,
-                        creatorProfile: {
-                            select: {
-                                username: true,
-                                headline: true,
-                                avatar: true,
-                                accentColor: true,
-                            },
-                        },
+                        title: true,
+                        url: true,
+                        type: true,
+                        icon: true,
+                        thumbnail: true,
+                        position: true,
+                        isFeatured: true,
                     },
                 },
             },
@@ -139,19 +231,19 @@ class LinkRepository {
         });
     }
 
-    async reorderLinks(data) {
-        return prisma.$transaction(
-            data.map(item =>
-                prisma.link.update({
-                    where: {
-                        id: item.id,
-                    },
-                    data: {
-                        position: item.position,
-                    },
-                })
-            )
+    async reorderLinks(creatorId, links) {
+        const updates = links.map((item) =>
+            prisma.link.update({
+                where: {
+                    id: item.id,
+                },
+                data: {
+                    position: item.position,
+                },
+            })
         );
+
+        return prisma.$transaction(updates);
     }
 }
 

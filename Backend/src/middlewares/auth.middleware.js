@@ -4,7 +4,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { verifyAccessToken } from "../utils/jwt.js";
 
-export const authenticate = asyncHandler(async (req, res, next) => {
+export const verifyJWT = asyncHandler(async (req, res, next) => {
 
     const bearerToken = req.headers.authorization?.startsWith("Bearer ")
         ? req.headers.authorization.split(" ")[1]
@@ -42,3 +42,5 @@ export const authenticate = asyncHandler(async (req, res, next) => {
 
     next();
 });
+
+export const authenticate = verifyJWT;

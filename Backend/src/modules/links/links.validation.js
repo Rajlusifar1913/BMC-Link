@@ -14,54 +14,85 @@ const linkType = z.enum([
 
 export const createLinkSchema = z.object({
     body: z.object({
-        title: z.string().trim().min(1).max(100).optional(),
+        title: z
+            .string()
+            .trim()
+            .min(1, "Title cannot be empty")
+            .max(100)
+            .optional(),
 
         url,
-
         type: linkType,
-
-        icon: z.string().max(255).optional(),
+        icon: z
+            .string()
+            .trim()
+            .min(1)
+            .max(255)
+            .optional(),
 
         thumbnail: url.optional(),
-
-        position: z.number().int().min(0).optional(),
+        position: z.number()
+            .int()
+            .min(1)
+            .optional(),
 
         isFeatured: z.boolean().optional(),
-
         isActive: z.boolean().optional(),
-
         startDate: z.coerce.date().optional(),
-
         endDate: z.coerce.date().optional(),
-    }).strict(),
+    }).refine(
+        (data) =>
+            !data.startDate ||
+            !data.endDate ||
+            data.endDate >= data.startDate,
+        {
+            message: "endDate must be after startDate",
+            path: ["endDate"],
+        }
+    ).strict(),
 
     params: z.object({}),
-
     query: z.object({}),
 });
 
 export const updateLinkSchema = z.object({
     body: z.object({
-        title: z.string().trim().min(1).max(100).optional(),
+        title: z
+            .string()
+            .trim()
+            .min(1, "Title cannot be empty")
+            .max(100)
+            .optional(),
 
         url: url.optional(),
-
         type: linkType.optional(),
-
-        icon: z.string().max(255).optional(),
+        icon: z
+            .string()
+            .trim()
+            .min(1)
+            .max(255)
+            .optional(),
 
         thumbnail: url.optional(),
-
-        position: z.number().int().min(0).optional(),
+        position: z.number()
+            .int()
+            .min(1)
+            .optional(),
 
         isFeatured: z.boolean().optional(),
-
         isActive: z.boolean().optional(),
-
         startDate: z.coerce.date().optional(),
-
         endDate: z.coerce.date().optional(),
-    }).strict(),
+    }).refine(
+        (data) =>
+            !data.startDate ||
+            !data.endDate ||
+            data.endDate >= data.startDate,
+        {
+            message: "endDate must be after startDate",
+            path: ["endDate"],
+        }
+    ).strict(),
 
     params: z.object({
         id: uuid,
@@ -85,7 +116,7 @@ export const reorderLinksSchema = z.object({
         links: z.array(
             z.object({
                 id: uuid,
-                position: z.number().int().min(0),
+                position: z.number().int().min(1)
             })
         ).min(1),
     }).strict(),
@@ -105,7 +136,12 @@ export const getLinksQuerySchema = z.object({
 
         limit: z.coerce.number().int().min(1).max(100).optional(),
 
-        search: z.string().optional(),
+        search: z
+            .string()
+            .trim()
+            .min(1)
+            .max(100)
+            .optional(),
 
         isActive: z
             .enum(["true", "false"])

@@ -13,12 +13,14 @@ const validate = (schema) => {
 
             req.body = parsed.body;
             req.params = parsed.params;
-            req.query = parsed.query;
 
             next();
         } catch (error) {
             if (error instanceof z.ZodError) {
-                throw new ApiError(400, "Validation error", error.errors);
+                const firstError = error.issues?.[0];
+                const message =
+                    firstError?.message || "Invalid request data";
+                return next(new ApiError(400, message));
             }
             next(error);
         }

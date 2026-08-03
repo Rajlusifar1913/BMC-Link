@@ -28,6 +28,7 @@ class AccountService {
         const exists = await accountRepository.findUsername(username);
 
         return {
+            username,
             available: !exists,
         };
     }
@@ -79,7 +80,7 @@ class AccountService {
             throw new ApiError(400, "No fields provided for update");
         }
 
-        if (themeId) {
+        if (themeId !== undefined && themeId !== null) {
             const theme = await prisma.theme.findUnique({
                 where: { id: themeId }
             });

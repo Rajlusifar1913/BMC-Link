@@ -76,9 +76,14 @@ class AccountRepository {
             }
 
             if (Object.keys(creatorProfileUpdateData).length > 0) {
-                updatedCreatorProfile = await tx.creatorProfile.update({
+                updatedCreatorProfile = await tx.creatorProfile.upsert({
                     where: { userId },
-                    data: creatorProfileUpdateData,
+                    update: creatorProfileUpdateData,
+                    create: {
+                        userId,
+                        username: `user_${userId.slice(0, 8)}`,
+                        ...creatorProfileUpdateData,
+                    },
                 });
             }
 

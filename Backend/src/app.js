@@ -7,6 +7,7 @@ import cookieParser from "cookie-parser";
 import passport from "./config/passport.js";
 import router from "./routes/index.js";
 import { errorHandler } from "./middlewares/errorHandler.js";
+import { swaggerUi, swaggerSpec } from "./config/swagger.js";
 
 const app = express();
 
@@ -33,6 +34,20 @@ app.use(express.static("public"));
 app.use(cookieParser());
 
 app.use(passport.initialize());
+
+app.use(
+    "/api-docs",
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerSpec, {
+        explorer: true,
+        customSiteTitle: "BMC-Link API Docs"
+    })
+);
+
+app.get("/api-docs.json", (req, res) => {
+    res.setHeader("Content-Type", "application/json");
+    res.send(swaggerSpec);
+});
 
 // API Routes
 app.use("/api/v1", router);

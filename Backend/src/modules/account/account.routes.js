@@ -9,17 +9,10 @@ import {
     checkUsername,
 } from "./account.controller.js";
 
-import {updateProfileSchema, usernameParamSchema} from "./account.validation.js";
-
-// import verifyJWT from "../../shared/middlewares/auth.middleware.js";
+import { updateProfileSchema, usernameParamSchema } from "./account.validation.js";
+import { verifyJWT } from "../../middlewares/auth.middleware.js";
 
 const accountRouter = Router();
-
-/*
-Replacing with auth middleware later when authentication will complete
-*/
-
-const verifyJWT = (req, res, next) => next();
 
 accountRouter.get(
     "/",

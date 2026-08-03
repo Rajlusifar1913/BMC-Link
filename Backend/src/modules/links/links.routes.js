@@ -21,12 +21,7 @@ import {
     reorderLinksSchema,
     getLinksQuerySchema,
 } from "./links.validation.js";
-
-/*
-Replace with actual auth middleware later
-*/
-
-const verifyJWT = (req, res, next) => next();
+import { verifyJWT } from "../../middlewares/auth.middleware.js";
 
 const linkRouter = Router();
 
@@ -78,14 +73,14 @@ linkRouter.delete(
 );
 
 linkRouter.patch(
-    "/:id/toggle",
+    "/toggle/:id",
     verifyJWT,
     validate(linkIdParamSchema),
     toggleLink
 );
 
 linkRouter.post(
-    "/:id/duplicate",
+    "/duplicate/:id",
     verifyJWT,
     validate(linkIdParamSchema),
     duplicateLink
