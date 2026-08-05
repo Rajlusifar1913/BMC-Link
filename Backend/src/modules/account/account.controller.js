@@ -1,4 +1,4 @@
-import {asyncHandler} from "../../utils/asyncHandler.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
 import { ApiResponse } from "../../utils/ApiResponse.js";
 import accountService from "./account.service.js";
 import { ApiError } from "../../utils/ApiError.js";
@@ -62,9 +62,8 @@ export const checkUsername = asyncHandler(async (req, res) => {
     return res.status(200).json(
         new ApiResponse(
             200,
-            result.available
-            ? "Username is available"
-            : "Username already exists"
+            result,
+            "Username checked successfully"
         )
     );
 });

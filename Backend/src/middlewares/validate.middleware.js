@@ -2,6 +2,23 @@ import { z } from "zod";
 
 import { ApiError } from "../utils/ApiError.js";
 
+const setRequestValue = (req, key, value) => {
+    if (key === "params" || key === "query") {
+        return;
+    }
+
+    try {
+        req[key] = value;
+    } catch {
+        Object.defineProperty(req, key, {
+            configurable: true,
+            enumerable: true,
+            writable: true,
+            value,
+        });
+    }
+};
+
 const validate = (schema) => {
     return async (req, res, next) => {
         try {
@@ -11,8 +28,8 @@ const validate = (schema) => {
                 query: req.query ?? {},
             });
 
-            req.body = parsed.body;
-            req.params = parsed.params;
+            setRequestValue(req, "body", parsed.body);
+            req.validated = parsed;
 
             next();
         } catch (error) {

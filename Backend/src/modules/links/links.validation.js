@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { uuid, url } from "../../utils/common.validators.js";
 
+const optionalNullableString = (schema) =>
+    z.preprocess(
+        (value) => (value === "" ? null : value),
+        schema.nullable().optional()
+    );
 
 const linkType = z.enum([
     "WEBSITE",
@@ -14,23 +19,17 @@ const linkType = z.enum([
 
 export const createLinkSchema = z.object({
     body: z.object({
-        title: z
-            .string()
-            .trim()
-            .min(1, "Title cannot be empty")
-            .max(100)
-            .optional(),
+        title: optionalNullableString(
+            z.string().trim().min(1, "Title cannot be empty").max(100)
+        ),
 
         url,
         type: linkType,
-        icon: z
-            .string()
-            .trim()
-            .min(1)
-            .max(255)
-            .optional(),
+        icon: optionalNullableString(
+            z.string().trim().min(1).max(255)
+        ),
 
-        thumbnail: url.optional(),
+        thumbnail: optionalNullableString(url),
         position: z.number()
             .int()
             .min(1)
@@ -57,23 +56,17 @@ export const createLinkSchema = z.object({
 
 export const updateLinkSchema = z.object({
     body: z.object({
-        title: z
-            .string()
-            .trim()
-            .min(1, "Title cannot be empty")
-            .max(100)
-            .optional(),
+        title: optionalNullableString(
+            z.string().trim().min(1, "Title cannot be empty").max(100)
+        ),
 
         url: url.optional(),
         type: linkType.optional(),
-        icon: z
-            .string()
-            .trim()
-            .min(1)
-            .max(255)
-            .optional(),
+        icon: optionalNullableString(
+            z.string().trim().min(1).max(255)
+        ),
 
-        thumbnail: url.optional(),
+        thumbnail: optionalNullableString(url),
         position: z.number()
             .int()
             .min(1)

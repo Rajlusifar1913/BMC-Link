@@ -27,7 +27,6 @@ class AuthController {
                 refreshToken,
                 refreshCookieOptions
             )
-            .status(200)
             .redirect(
                 process.env.FRONTEND_SUCCESS_URL ||
                 process.env.FRONTEND_URL

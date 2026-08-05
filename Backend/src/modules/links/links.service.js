@@ -9,6 +9,13 @@ class LinkService {
 
     async createLink(creatorId, payload) {
 
+        const normalizedPayload = {
+            ...payload,
+            title: payload.title === "" ? null : payload.title,
+            icon: payload.icon === "" ? null : payload.icon,
+            thumbnail: payload.thumbnail === "" ? null : payload.thumbnail,
+        };
+
         const {
             title,
             url,
@@ -20,7 +27,7 @@ class LinkService {
             isActive = true,
             startDate,
             endDate,
-        } = payload;
+        } = normalizedPayload;
 
         const existingLink = await linkRepository.findByUserIdAndUrl(
             creatorId,
@@ -106,7 +113,14 @@ class LinkService {
 
         await this.getLink(creatorId, id);
 
-        return linkRepository.update(id, payload);
+        const normalizedPayload = {
+            ...payload,
+            title: payload.title === "" ? null : payload.title,
+            icon: payload.icon === "" ? null : payload.icon,
+            thumbnail: payload.thumbnail === "" ? null : payload.thumbnail,
+        };
+
+        return linkRepository.update(id, normalizedPayload);
     }
 
     async deleteLink(creatorId, id) {

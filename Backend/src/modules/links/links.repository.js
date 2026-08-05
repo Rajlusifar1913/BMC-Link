@@ -8,6 +8,20 @@ class LinkRepository {
         });
     }
 
+    async createWithPosition(creatorId, data) {
+        const position =
+            data.position ??
+            (await this.getMaxPosition(creatorId)) + 1;
+
+        return prisma.link.create({
+            data: {
+                ...data,
+                creatorId,
+                position,
+            },
+        });
+    }
+
     async findById(id) {
         return prisma.link.findUnique({
             where: {
