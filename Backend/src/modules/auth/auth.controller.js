@@ -37,8 +37,8 @@ class AuthController {
     refresh = asyncHandler(async (req, res) => {
 
         const refreshToken =
-            req.cookies?.refreshToken ||
-            req.body?.refreshToken;
+            req.body?.refreshToken?.trim() ||
+            req.cookies?.refreshToken;
 
         if (!refreshToken) {
             throw new ApiError(401, "Refresh token missing");

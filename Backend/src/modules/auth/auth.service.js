@@ -89,14 +89,10 @@ class AuthService {
         const hashed = hashRefreshToken(refreshToken);
 
         if (hashed !== session.refreshToken) {
-
-            await authRepository.deleteSession(session.id);
-
             throw new ApiError(
                 401,
-                "Session compromised. Please login again."
+                "Refresh token is invalid or has already been used. Please login again."
             );
-
         }
 
         const user = await authRepository.findUserById(payload.userId);
@@ -110,14 +106,9 @@ class AuthService {
             sessionId: session.id,
         });
 
-        const newRefreshToken = generateRefreshToken({
-            userId: user.id,
-            sessionId: session.id,
-        });
-
         await authRepository.updateSessionToken(
             session.id,
-            hashRefreshToken(newRefreshToken)
+            hashed
         );
 
         return {
@@ -130,7 +121,7 @@ class AuthService {
                 status: user.status,
             },
             accessToken: newAccessToken,
-            refreshToken: newRefreshToken,
+            refreshToken,
         };
     }
 

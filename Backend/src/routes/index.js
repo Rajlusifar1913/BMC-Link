@@ -3,6 +3,8 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import accountRouter from "../modules/account/account.routes.js";
 import linkRouter from "../modules/links/links.routes.js";
 import authRoutes from "../modules/auth/auth.routes.js";
+import adminRoutes from "../modules/admin/admin.routes.js";
+
 
 
 const router = express.Router();
@@ -16,5 +18,6 @@ router.route("/health").get((req, res) => {
 router.use("/auth", authRoutes);
 router.use("/account", accountRouter);
 router.use("/links", linkRouter);
+router.use("/admin", adminRoutes);
 
 export default router;

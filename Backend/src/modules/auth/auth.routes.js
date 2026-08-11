@@ -6,9 +6,9 @@ import validate from "../../middlewares/validate.middleware.js";
 import { refreshTokenSchema } from "./auth.validation.js";
 import { authenticate } from "../../middlewares/auth.middleware.js";
 
-const router = Router();
+const authRoutes = Router();
 
-router.get(
+authRoutes.get(
     "/google",
     passport.authenticate("google", {
         scope: ["profile", "email"],
@@ -16,7 +16,7 @@ router.get(
     })
 );
 
-router.get(
+authRoutes.get(
     "/google/callback",
     passport.authenticate("google", {
         session: false,
@@ -25,27 +25,27 @@ router.get(
     authController.googleSuccess
 );
 
-router.post(
+authRoutes.post(
     "/refresh",
     validate(refreshTokenSchema),
     authController.refresh
 );
 
-router.post(
+authRoutes.post(
     "/logout",
     authController.logout
 );
 
-router.post(
+authRoutes.post(
     "/logout-all",
     authenticate,
     authController.logoutAll
 );
 
-router.get(
+authRoutes.get(
     "/me",
     authenticate,
     authController.me
 );
 
-export default router;
+export default authRoutes;

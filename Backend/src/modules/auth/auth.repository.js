@@ -149,7 +149,7 @@ class AuthRepository {
 
     async deleteSession(sessionId) {
 
-        return prisma.userSession.delete({
+        return prisma.userSession.deleteMany({
             where: {
                 id: sessionId
             }
