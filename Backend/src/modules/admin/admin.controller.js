@@ -33,7 +33,8 @@ class AdminController {
 		const user =
 			await adminService.updateUser(
 				req.params.id,
-				req.body
+				req.body,
+				req.user.id
 			);
 
 		return res.status(200).json(
@@ -77,7 +78,6 @@ class AdminController {
 				"Reports fetched successfully"
 			)
 		);
-
 	});
 
 }

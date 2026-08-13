@@ -84,7 +84,15 @@ class AdminService {
 
 	}
 
-	async updateUser(id, data) {
+	async updateUser(id, data, adminId) {
+
+		if (id === adminId) {
+			throw new ApiError(
+				400,
+				"You cannot modify your own account through admin user management"
+			);
+		}
+
 		const existing =
 			await prisma.user.findUnique({
 				where: { id }
@@ -96,6 +104,7 @@ class AdminService {
 				"User not found"
 			);
 		}
+
 		return adminRepository.updateUser(
 			id,
 			data
