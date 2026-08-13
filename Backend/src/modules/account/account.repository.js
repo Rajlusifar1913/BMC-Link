@@ -1,95 +1,122 @@
 import prisma from "../../config/prisma.js";
 
 class AccountRepository {
-    async findProfileByUserId(userId) {
-        return prisma.user.findUnique({
-            where: {
-                id: userId,
-            },
-            select: {
-                id: true,
-                email: true,
-                name: true,
-                phone: true,
-                profilePicture: true,
-                timezone: true,
-                language: true,
-                creatorProfile: {
-                    include: {
-                        theme: true,
-                    },
-                },
-            },
+  async findProfileByUserId(userId) {
+    return prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        profilePicture: true,
+        timezone: true,
+        language: true,
+        creatorProfile: {
+          include: {
+            theme: true,
+          },
+        },
+      },
+    });
+  }
+
+  async findPublicProfile(username) {
+    return prisma.creatorProfile.findUnique({
+      where: {
+        username,
+      },
+      select: {
+        id: true,
+        username: true,
+        headline: true,
+        bio: true,
+        avatar: true,
+        coverImage: true,
+        website: true,
+        accentColor: true,
+        theme: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        user: {
+          select: {
+            name: true,
+            profilePicture: true,
+          },
+        },
+      },
+    });
+  }
+
+  async findUsername(username) {
+    return prisma.creatorProfile.findUnique({
+      where: {
+        username,
+      },
+      select: {
+        id: true,
+      },
+    });
+  }
+
+  async updateProfileTransaction(
+    userId,
+    userUpdateData,
+    creatorProfileUpdateData,
+  ) {
+    return prisma.$transaction(async (tx) => {
+      let updatedUser, updatedCreatorProfile;
+
+      if (Object.keys(userUpdateData).length > 0) {
+        updatedUser = await tx.user.update({
+          where: { id: userId },
+          data: userUpdateData,
         });
-    }
+      }
 
-    async findPublicProfile(username) {
-        return prisma.creatorProfile.findUnique({
-            where: {
-                username,
-            },
-            select: {
-                id: true,
-                username: true,
-                headline: true,
-                bio: true,
-                avatar: true,
-                coverImage: true,
-                website: true,
-                accentColor: true,
-                theme: {
-                    select: {
-                        id: true,
-                        name: true
-                    }
-                },
-                user: {
-                    select: {
-                        name: true,
-                        profilePicture: true
-                    }
-                }
-            }
+      if (Object.keys(creatorProfileUpdateData).length > 0) {
+        updatedCreatorProfile = await tx.creatorProfile.upsert({
+          where: { userId },
+          update: creatorProfileUpdateData,
+          create: {
+            userId,
+            username: `user_${userId.slice(0, 8)}`,
+            ...creatorProfileUpdateData,
+          },
         });
-    }
+      }
 
-    async findUsername(username) {
-        return prisma.creatorProfile.findUnique({
-            where: {
-                username,
-            },
-            select: {
-                id: true,
-            },
-        });
-    }
+      return { updatedUser, updatedCreatorProfile };
+    });
+  }
 
-    async updateProfileTransaction(userId, userUpdateData, creatorProfileUpdateData) {
-        return prisma.$transaction(async (tx) => {
-            let updatedUser, updatedCreatorProfile;
+  async findCreatorSetting(userId) {
+    return prisma.creatorSetting.findUnique({
+      where: { creatorId: userId },
+    });
+  }
 
-            if (Object.keys(userUpdateData).length > 0) {
-                updatedUser = await tx.user.update({
-                    where: { id: userId },
-                    data: userUpdateData,
-                });
-            }
+  async upsertCreatorSetting(userId, data) {
+    return prisma.creatorSetting.upsert({
+      where: { creatorId: userId },
+      update: data,
+      create: {
+        creatorId: userId,
+        ...data,
+      },
+    });
+  }
 
-            if (Object.keys(creatorProfileUpdateData).length > 0) {
-                updatedCreatorProfile = await tx.creatorProfile.upsert({
-                    where: { userId },
-                    update: creatorProfileUpdateData,
-                    create: {
-                        userId,
-                        username: `user_${userId.slice(0, 8)}`,
-                        ...creatorProfileUpdateData,
-                    },
-                });
-            }
-
-            return { updatedUser, updatedCreatorProfile };
-        });
-    }
+  async findCreatorAnalytics(userId) {
+    return prisma.creatorAnalytics.findUnique({
+      where: { creatorId: userId },
+    });
+  }
 }
 
 export default new AccountRepository();

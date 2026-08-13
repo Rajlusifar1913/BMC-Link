@@ -3,282 +3,232 @@ import { ApiError } from "../../utils/ApiError.js";
 import prisma from "../../config/prisma.js";
 
 class AdminService {
+  async getUsers(query) {
+    const { page, limit, search, role, status, sortBy, order } = query;
 
-	async getUsers(query) {
+    const skip = (page - 1) * limit;
 
-		const {
-			page,
-			limit,
-			search,
-			role,
-			status,
-			sortBy,
-			order
-		} = query;
+    const where = {};
 
-		const skip = (page - 1) * limit;
+    if (search) {
+      where.OR = [
+        {
+          name: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
 
-		const where = {};
+        {
+          email: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+      ];
+    }
 
-		if (search) {
+    if (role) {
+      where.role = role;
+    }
 
-			where.OR = [
+    if (status) {
+      where.status = status;
+    }
 
-				{
-					name: {
-						contains: search,
-						mode: "insensitive"
-					}
-				},
+    const { users, total } = await adminRepository.getUsers({
+      skip,
+      take: limit,
+      where,
 
-				{
-					email: {
-						contains: search,
-						mode: "insensitive"
-					}
-				}
+      orderBy: {
+        [sortBy]: order,
+      },
+    });
 
-			];
+    return {
+      users,
 
-		}
+      pagination: {
+        total,
 
-		if (role) {
-			where.role = role;
-		}
+        page,
 
-		if (status) {
-			where.status = status;
-		}
+        limit,
 
-		const { users, total } =
-			await adminRepository.getUsers({
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
 
-				skip,
-				take: limit,
-				where,
+  async updateUser(id, data) {
+    const existing = await prisma.user.findUnique({
+      where: { id },
+    });
 
-				orderBy: {
-					[sortBy]: order
-				}
+    if (!existing) {
+      throw new ApiError(404, "User not found");
+    }
+    return adminRepository.updateUser(id, data);
+  }
 
-			});
+  async getCreators(query) {
+    const { page, limit, search, status, sortBy, order } = query;
 
-		return {
+    const skip = (page - 1) * limit;
 
-			users,
+    const where = {};
 
-			pagination: {
+    if (search) {
+      where.OR = [
+        {
+          username: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+        {
+          user: {
+            name: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+        },
+        {
+          user: {
+            email: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+        },
+      ];
+    }
 
-				total,
+    if (status) {
+      where.user = {
+        status,
+      };
+    }
 
-				page,
+    where.user = {
+      ...(where.user || {}),
+      role: "CREATOR",
+    };
 
-				limit,
+    const { creators, total } = await adminRepository.getCreators({
+      skip,
+      take: limit,
+      where,
+      orderBy: {
+        [sortBy]: order,
+      },
+    });
 
-				totalPages:
-					Math.ceil(total / limit)
+    return {
+      creators,
 
-			}
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
 
-		};
+  async getReports(query) {
+    const {
+      page,
+      limit,
+      search,
+      action,
+      entity,
+      userId,
+      startDate,
+      endDate,
+      sortBy,
+      order,
+    } = query;
 
-	}
+    const skip = (page - 1) * limit;
 
-	async updateUser(id, data) {
-		const existing =
-			await prisma.user.findUnique({
-				where: { id }
-			});
+    const where = {};
 
-		if (!existing) {
-			throw new ApiError(
-				404,
-				"User not found"
-			);
-		}
-		return adminRepository.updateUser(
-			id,
-			data
-		);
-	}
+    if (search) {
+      where.OR = [
+        {
+          action: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+        {
+          entity: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+        {
+          entityId: {
+            contains: search,
+            mode: "insensitive",
+          },
+        },
+      ];
+    }
 
-	async getCreators(query) {
+    if (action) {
+      where.action = {
+        equals: action,
+        mode: "insensitive",
+      };
+    }
 
-		const {
-			page,
-			limit,
-			search,
-			status,
-			sortBy,
-			order
-		} = query;
+    if (entity) {
+      where.entity = {
+        equals: entity,
+        mode: "insensitive",
+      };
+    }
 
-		const skip = (page - 1) * limit;
+    if (userId) {
+      where.userId = userId;
+    }
 
-		const where = {};
+    if (startDate || endDate) {
+      where.createdAt = {};
 
-		if (search) {
-			where.OR = [
-				{
-					username: {
-						contains: search,
-						mode: "insensitive"
-					}
-				},
-				{
-					user: {
-						name: {
-							contains: search,
-							mode: "insensitive"
-						}
-					}
-				},
-				{
-					user: {
-						email: {
-							contains: search,
-							mode: "insensitive"
-						}
-					}
-				}
-			];
-		}
+      if (startDate) {
+        where.createdAt.gte = startDate;
+      }
 
-		if (status) {
-			where.user = {
-				status
-			};
-		}
+      if (endDate) {
+        where.createdAt.lte = endDate;
+      }
+    }
 
-		where.user = {
-			...(where.user || {}),
-			role: "CREATOR"
-		};
+    const { reports, total } = await adminRepository.getReports({
+      skip,
+      take: limit,
+      where,
+      orderBy: {
+        [sortBy]: order,
+      },
+    });
 
-		const {
-			creators,
-			total
-		} = await adminRepository.getCreators({
-			skip,
-			take: limit,
-			where,
-			orderBy: {
-				[sortBy]: order
-			}
-		});
+    return {
+      reports,
 
-		return {
-			creators,
-
-			pagination: {
-				total,
-				page,
-				limit,
-				totalPages: Math.ceil(total / limit)
-			}
-		};
-	}
-
-	async getReports(query) {
-
-		const {
-			page,
-			limit,
-			search,
-			action,
-			entity,
-			userId,
-			startDate,
-			endDate,
-			sortBy,
-			order
-		} = query;
-
-		const skip = (page - 1) * limit;
-
-		const where = {};
-
-		if (search) {
-
-			where.OR = [
-				{
-					action: {
-						contains: search,
-						mode: "insensitive"
-					}
-				},
-				{
-					entity: {
-						contains: search,
-						mode: "insensitive"
-					}
-				},
-				{
-					entityId: {
-						contains: search,
-						mode: "insensitive"
-					}
-				}
-			];
-
-		}
-
-		if (action) {
-			where.action = {
-				equals: action,
-				mode: "insensitive"
-			};
-		}
-
-		if (entity) {
-			where.entity = {
-				equals: entity,
-				mode: "insensitive"
-			};
-		}
-
-		if (userId) {
-			where.userId = userId;
-		}
-
-		if (startDate || endDate) {
-
-			where.createdAt = {};
-
-			if (startDate) {
-				where.createdAt.gte = startDate;
-			}
-
-			if (endDate) {
-				where.createdAt.lte = endDate;
-			}
-
-		}
-
-		const {
-			reports,
-			total
-		} = await adminRepository.getReports({
-			skip,
-			take: limit,
-			where,
-			orderBy: {
-				[sortBy]: order
-			}
-		});
-
-		return {
-			reports,
-
-			pagination: {
-				total,
-				page,
-				limit,
-				totalPages: Math.ceil(total / limit)
-			}
-		};
-	}
-
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
 }
 
 export const adminService = new AdminService();

@@ -122,6 +122,8 @@ model User {
 
   payments Payment[]
 
+  memberMemberships Membership[] @relation("MemberMemberships")
+
   receivedDonations Donation[] @relation("CreatorDonations")
   givenDonations    Donation[] @relation("SupporterDonations")
 
@@ -418,7 +420,7 @@ model PaymentGateway {
 
 model Payment {
   id               String        @id @default(uuid())
-  userId           String        @map("user_id")
+  userId           String?       @map("user_id")
   paymentType      PaymentType   @map("payment_type")
   amount           Decimal       @db.Decimal(10, 2)
   currency         String        @db.Char(3)
@@ -437,7 +439,7 @@ model Payment {
 
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   gateway PaymentGateway? @relation(fields: [gatewayId], references: [id])
 
@@ -449,9 +451,28 @@ model Payment {
 
   purchase Purchase?
 
+  webhookEvents PaymentWebhookEvent[]
+
   @@index([userId])
   @@index([gatewayId])
+  @@unique([gatewayOrderId])
+  @@unique([gatewayPaymentId])
   @@map("payments")
+}
+
+model PaymentWebhookEvent {
+  id             String   @id @default(uuid())
+  gatewayEventId String   @unique @map("gateway_event_id")
+  eventType      String   @map("event_type")
+  paymentId      String?  @map("payment_id")
+  payload        Json
+  processedAt    DateTime? @map("processed_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  payment Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([paymentId])
+  @@map("payment_webhook_events")
 }
 
 model Donation {
@@ -501,6 +522,7 @@ model Membership {
   creatorId      String           @map("creator_id")
   planId         String           @map("plan_id")
   paymentId      String           @unique @map("payment_id")
+  memberId       String?          @map("member_id")
   memberName     String?          @map("member_name")
   memberEmail    String?          @map("member_email")
   status         MembershipStatus @default(ACTIVE)
@@ -514,12 +536,15 @@ model Membership {
 
   creator User @relation(fields: [creatorId], references: [id], onDelete: Cascade)
 
+  member User? @relation("MemberMemberships", fields: [memberId], references: [id], onDelete: SetNull)
+
   plan MembershipPlan @relation(fields: [planId], references: [id])
 
   payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
 
   @@index([creatorId])
   @@index([planId])
+  @@index([memberId])
   @@map("memberships")
 }
 
@@ -584,7 +609,7 @@ model DigitalProduct {
   title         String
   description   String?
   price         Decimal           @db.Decimal(10, 2)
-  fileUrl       String            @map("file_url")
+  fileUrl       String?           @map("file_url")
   thumbnail     String?
   slug          String            @unique
   categoryId    String?           @map("category_id")
@@ -628,6 +653,7 @@ model Purchase {
   buyerEmail    String? @map("buyer_email")
   buyerId       String? @map("buyer_id")
   downloadCount Int     @default(0) @map("download_count")
+  downloadLimit Int?    @map("download_limit")
   licenseKey    String? @map("license_key")
 
   expiresAt   DateTime? @map("expires_at")

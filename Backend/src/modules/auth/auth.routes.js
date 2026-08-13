@@ -9,43 +9,32 @@ import { authenticate } from "../../middlewares/auth.middleware.js";
 const authRoutes = Router();
 
 authRoutes.get(
-    "/google",
-    passport.authenticate("google", {
-        scope: ["profile", "email"],
-        session: false,
-    })
+  "/google",
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    session: false,
+  }),
 );
 
 authRoutes.get(
-    "/google/callback",
-    passport.authenticate("google", {
-        session: false,
-        failureRedirect: `${process.env.FRONTEND_URL}/login`,
-    }),
-    authController.googleSuccess
+  "/google/callback",
+  passport.authenticate("google", {
+    session: false,
+    failureRedirect: `${process.env.FRONTEND_URL}/login`,
+  }),
+  authController.googleSuccess,
 );
 
 authRoutes.post(
-    "/refresh",
-    validate(refreshTokenSchema),
-    authController.refresh
+  "/refresh",
+  validate(refreshTokenSchema),
+  authController.refresh,
 );
 
-authRoutes.post(
-    "/logout",
-    authController.logout
-);
+authRoutes.post("/logout", authController.logout);
 
-authRoutes.post(
-    "/logout-all",
-    authenticate,
-    authController.logoutAll
-);
+authRoutes.post("/logout-all", authenticate, authController.logoutAll);
 
-authRoutes.get(
-    "/me",
-    authenticate,
-    authController.me
-);
+authRoutes.get("/me", authenticate, authController.me);
 
 export default authRoutes;

@@ -4,66 +4,71 @@ import accountService from "./account.service.js";
 import { ApiError } from "../../utils/ApiError.js";
 
 export const getProfile = asyncHandler(async (req, res) => {
-    if (!req.user?.id) {
-        throw new ApiError(401, "Unauthorized access");
-    }
+  if (!req.user?.id) {
+    throw new ApiError(401, "Unauthorized access");
+  }
 
-    const profile = await accountService.getProfile(req.user.id);
+  const profile = await accountService.getProfile(req.user.id);
 
-    return res.status(200).json(
-        new ApiResponse(
-            200,
-            profile,
-            "Profile fetched successfully"
-        )
-    );
+  return res
+    .status(200)
+    .json(new ApiResponse(200, profile, "Profile fetched successfully"));
 });
 
 export const updateProfile = asyncHandler(async (req, res) => {
-    if (!req.user?.id) {
-        throw new ApiError(401, "Unauthorized access");
-    }
+  if (!req.user?.id) {
+    throw new ApiError(401, "Unauthorized access");
+  }
 
-    const profile = await accountService.updateProfile(
-        req.user.id,
-        req.body
-    );
+  const profile = await accountService.updateProfile(req.user.id, req.body);
 
-    return res.status(200).json(
-        new ApiResponse(
-            200,
-            profile,
-            "Profile updated successfully"
-        )
-    );
+  return res
+    .status(200)
+    .json(new ApiResponse(200, profile, "Profile updated successfully"));
 });
 
 export const getPublicProfile = asyncHandler(async (req, res) => {
+  const profile = await accountService.getPublicProfile(req.params.username);
 
-    const profile = await accountService.getPublicProfile(
-        req.params.username
-    );
-
-    return res.status(200).json(
-        new ApiResponse(
-            200,
-            profile,
-            "Public profile fetched successfully"
-        )
-    );
+  return res
+    .status(200)
+    .json(new ApiResponse(200, profile, "Public profile fetched successfully"));
 });
 
 export const checkUsername = asyncHandler(async (req, res) => {
+  const result = await accountService.checkUsername(req.params.username);
 
-    const result = await accountService.checkUsername(
-        req.params.username
-    );
+  return res
+    .status(200)
+    .json(new ApiResponse(200, result, "Username checked successfully"));
+});
 
-    return res.status(200).json(
-        new ApiResponse(
-            200,
-            result,
-            "Username checked successfully"
-        )
-    );
+export const getSettings = asyncHandler(async (req, res) => {
+  if (!req.user?.id) {
+    throw new ApiError(401, "Unauthorized access");
+  }
+  const settings = await accountService.getSettings(req.user.id);
+  return res
+    .status(200)
+    .json(new ApiResponse(200, settings, "Settings fetched successfully"));
+});
+
+export const updateSettings = asyncHandler(async (req, res) => {
+  if (!req.user?.id) {
+    throw new ApiError(401, "Unauthorized access");
+  }
+  const settings = await accountService.updateSettings(req.user.id, req.body);
+  return res
+    .status(200)
+    .json(new ApiResponse(200, settings, "Settings updated successfully"));
+});
+
+export const getAnalytics = asyncHandler(async (req, res) => {
+  if (!req.user?.id) {
+    throw new ApiError(401, "Unauthorized access");
+  }
+  const analytics = await accountService.getAnalytics(req.user.id);
+  return res
+    .status(200)
+    .json(new ApiResponse(200, analytics, "Analytics fetched successfully"));
 });

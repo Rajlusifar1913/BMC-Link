@@ -3,101 +3,130 @@ import accountRepository from "./account.repository.js";
 import prisma from "../../config/prisma.js";
 
 class AccountService {
+  async getProfile(userId) {
+    const profile = await accountRepository.findProfileByUserId(userId);
 
-    async getProfile(userId) {
-        const profile = await accountRepository.findProfileByUserId(userId);
-
-        if (!profile) {
-            throw new ApiError(404, "Profile not found");
-        }
-
-        return profile;
+    if (!profile) {
+      throw new ApiError(404, "Profile not found");
     }
 
-    async getPublicProfile(username) {
-        const profile = await accountRepository.findPublicProfile(username);
+    return profile;
+  }
 
-        if (!profile) {
-            throw new ApiError(404, "Creator not found");
-        }
+  async getPublicProfile(username) {
+    const profile = await accountRepository.findPublicProfile(username);
 
-        return profile;
+    if (!profile) {
+      throw new ApiError(404, "Creator not found");
     }
 
-    async checkUsername(username) {
-        const exists = await accountRepository.findUsername(username);
+    return profile;
+  }
 
-        return {
-            username,
-            available: !exists,
-        };
+  async checkUsername(username) {
+    const exists = await accountRepository.findUsername(username);
+
+    return {
+      username,
+      available: !exists,
+    };
+  }
+
+  async updateProfile(userId, payload) {
+    const {
+      name,
+      phone,
+      profilePicture,
+      timezone,
+      language,
+      headline,
+      bio,
+      avatar,
+      coverImage,
+      website,
+      accentColor,
+      themeId,
+    } = payload;
+
+    // Filter out undefined values to avoid overwriting existing data with nulls
+    const userUpdateData = Object.fromEntries(
+      Object.entries({
+        name,
+        phone,
+        profilePicture,
+        timezone,
+        language,
+      }).filter(([_, v]) => v !== undefined),
+    );
+
+    const creatorProfileUpdateData = Object.fromEntries(
+      Object.entries({
+        headline,
+        bio,
+        avatar,
+        coverImage,
+        website,
+        accentColor,
+        themeId,
+      }).filter(([_, v]) => v !== undefined),
+    );
+
+    if (
+      Object.keys(userUpdateData).length === 0 &&
+      Object.keys(creatorProfileUpdateData).length === 0
+    ) {
+      throw new ApiError(400, "No fields provided for update");
     }
 
-    async updateProfile(userId, payload) {
+    if (themeId !== undefined && themeId !== null) {
+      const theme = await prisma.theme.findUnique({
+        where: { id: themeId },
+      });
 
-        const {
-            name,
-            phone,
-            profilePicture,
-            timezone,
-            language,
-            headline,
-            bio,
-            avatar,
-            coverImage,
-            website,
-            accentColor,
-            themeId,
-        } = payload;
-
-        // Filter out undefined values to avoid overwriting existing data with nulls
-        const userUpdateData = Object.fromEntries(
-            Object.entries({
-                name,
-                phone,
-                profilePicture,
-                timezone,
-                language,
-            }).filter(([_, v]) => v !== undefined)
-        );
-
-        const creatorProfileUpdateData = Object.fromEntries(
-            Object.entries({
-                headline,
-                bio,
-                avatar,
-                coverImage,
-                website,
-                accentColor,
-                themeId,
-            }).filter(([_, v]) => v !== undefined)
-        );
-
-        if (
-            Object.keys(userUpdateData).length === 0 &&
-            Object.keys(creatorProfileUpdateData).length === 0
-        ) {
-            throw new ApiError(400, "No fields provided for update");
-        }
-
-        if (themeId !== undefined && themeId !== null) {
-            const theme = await prisma.theme.findUnique({
-                where: { id: themeId }
-            });
-
-            if (!theme) {
-                throw new ApiError(404, "Theme not found");
-            }
-        }
-
-        await accountRepository.updateProfileTransaction(
-            userId,
-            userUpdateData,
-            creatorProfileUpdateData
-        );
-
-        return this.getProfile(userId);
+      if (!theme) {
+        throw new ApiError(404, "Theme not found");
+      }
     }
+
+    await accountRepository.updateProfileTransaction(
+      userId,
+      userUpdateData,
+      creatorProfileUpdateData,
+    );
+
+    return this.getProfile(userId);
+  }
+
+  async getSettings(userId) {
+    let settings = await accountRepository.findCreatorSetting(userId);
+    if (!settings) {
+      settings = await accountRepository.upsertCreatorSetting(userId, {
+        allowDonations: true,
+        allowMemberships: true,
+        allowProducts: true,
+        showEmail: false,
+      });
+    }
+    return settings;
+  }
+
+  async updateSettings(userId, payload) {
+    return accountRepository.upsertCreatorSetting(userId, payload);
+  }
+
+  async getAnalytics(userId) {
+    let analytics = await accountRepository.findCreatorAnalytics(userId);
+    if (!analytics) {
+      return {
+        totalProfileViews: 0,
+        totalLinkClicks: 0,
+        totalDonations: 0.0,
+        totalSales: 0.0,
+        totalRevenue: 0.0,
+      };
+    }
+    return analytics;
+  }
 }
 
 export default new AccountService();
