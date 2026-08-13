@@ -20,8 +20,14 @@ class AdminController {
     );
   });
 
-  updateUser = asyncHandler(async (req, res) => {
-    const user = await adminService.updateUser(req.params.id, req.body);
+	updateUser = asyncHandler(async (req, res) => {
+
+		const user =
+			await adminService.updateUser(
+				req.params.id,
+				req.body,
+				req.user.id
+			);
 
     return res
       .status(200)
@@ -43,10 +49,15 @@ class AdminController {
       req.validated?.query || req.query,
     );
 
-    return res
-      .status(200)
-      .json(new ApiResponse(200, result, "Reports fetched successfully"));
-  });
+		return res.status(200).json(
+			new ApiResponse(
+				200,
+				result,
+				"Reports fetched successfully"
+			)
+		);
+	});
+
 }
 
 export const adminController = new AdminController();

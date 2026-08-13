@@ -61,16 +61,32 @@ class AdminService {
     };
   }
 
-  async updateUser(id, data) {
-    const existing = await prisma.user.findUnique({
-      where: { id },
-    });
+	async updateUser(id, data, adminId) {
 
-    if (!existing) {
-      throw new ApiError(404, "User not found");
-    }
-    return adminRepository.updateUser(id, data);
-  }
+		if (id === adminId) {
+			throw new ApiError(
+				400,
+				"You cannot modify your own account through admin user management"
+			);
+		}
+
+		const existing =
+			await prisma.user.findUnique({
+				where: { id }
+			});
+
+		if (!existing) {
+			throw new ApiError(
+				404,
+				"User not found"
+			);
+		}
+
+		return adminRepository.updateUser(
+			id,
+			data
+		);
+	}
 
   async getCreators(query) {
     const { page, limit, search, status, sortBy, order } = query;
