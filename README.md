@@ -8,16 +8,16 @@ The project follows a **feature-based modular architecture** with the **Reposito
 
 # Tech Stack
 
-* Node.js
-* Express.js
-* PostgreSQL
-* Prisma ORM
-* Passport.js
-* Google OAuth 2.0
-* JWT Authentication
-* Zod Validation
-* Swagger (OpenAPI 3.0)
-* Cookie Parser
+- Node.js
+- Express.js
+- PostgreSQL
+- Prisma ORM
+- Passport.js
+- Google OAuth 2.0
+- JWT Authentication
+- Zod Validation
+- Swagger (OpenAPI 3.0)
+- Cookie Parser
 
 ---
 
@@ -30,9 +30,16 @@ src
 ├── docs/
 ├── middlewares/
 ├── modules/
-│   ├── auth/
 │   ├── account/
-│   └── links/
+│   ├── admin/
+│   ├── auth/
+│   ├── donations/
+│   ├── links/
+│   ├── media/
+│   ├── memberships/
+│   ├── payments/
+│   ├── products/
+│   └── purchases/
 │
 ├── routes/
 ├── utils/
@@ -45,10 +52,10 @@ Each module contains:
 ```text
 controller
 service
-repository
+repository (optional)
 routes
-validation
-swagger
+validation (optional)
+swagger (optional)
 ```
 
 ---
@@ -57,38 +64,88 @@ swagger
 
 ## Authentication Module
 
-* Google OAuth 2.0 Login
-* Google OAuth Callback
-* JWT Access Token
-* JWT Refresh Token
-* Refresh Token Rotation
-* Session Management
-* Logout Current Session
-* Logout From All Devices
-* Get Current User
+- Google OAuth 2.0 Login
+- Google OAuth Callback
+- JWT Access Token
+- JWT Refresh Token
+- Refresh Token Rotation
+- Session Management
+- Logout Current Session
+- Logout From All Devices
+- Get Current User
 
 ---
 
-## Account Module
+## Account & Settings Module
 
-* Get Logged-in User Profile
-* Update Profile
-* Check Username Availability
-* Get Public Creator Profile
+- Get Logged-in User Profile
+- Update Profile
+- Check Username Availability
+- Get Public Creator Profile
+- Manage Creator Settings (Allow donations, memberships, products, etc.)
+- View Creator Analytics (Profile views, link clicks, total donations, total sales, total revenue)
 
 ---
 
 ## Links Module
 
-* Create Link
-* Get Creator Links
-* Get Single Link
-* Update Link
-* Delete Link
-* Toggle Link Status
-* Duplicate Link
-* Reorder Links
-* Get Public Links
+- Create Link
+- Get Creator Links
+- Get Single Link
+- Update Link
+- Delete Link
+- Toggle Link Status
+- Duplicate Link
+- Reorder Links
+- Get Public Links
+
+---
+
+## Donations Module
+
+- Create Donation Order (Razorpay integration)
+- Verify Donation Payment and Signature
+- Retrieve Received Donations (Creator dashboard)
+- Support Anonymous Donations
+
+---
+
+## Memberships Module
+
+- Create, Update, and List Membership Plans (Creators)
+- Retrieve Public Plans for a Creator
+- Subscribe to a Membership Plan (Supporters)
+- Verify Subscription Payment
+- List Active/Past Memberships
+- Cancel Membership Subscriptions
+
+---
+
+## Digital Products Module
+
+- Create, Update, and Retrieve Digital Products (Creators)
+- Upload Product Files and Thumbnail Images (Local file storage)
+- Publish and Unpublish Products
+- List Public Products of a Creator
+- View Single Public Product Details
+
+---
+
+## Product Purchases Module
+
+- Create Purchase Orders (Supporters)
+- Verify Purchase Payments
+- Retrieve Sales Analytics & History (Creators)
+- Retrieve Purchase History (Buyers)
+- Download Purchased Product Files (Authenticated secure downloads)
+
+---
+
+## Payments & Webhooks Module
+
+- Integrated Razorpay Payment Gateway
+- Signature & Webhook Verification
+- Handle Asynchronous Payment Status Updates (Razorpay Webhook)
 
 ---
 
@@ -135,14 +192,14 @@ http://localhost:<PORT>/api-docs
 
 The documentation includes:
 
-* Request Body
-* Query Parameters
-* Path Parameters
-* Authentication Requirements
-* Success Responses
-* Error Responses
-* Reusable Schemas
-* Response Examples
+- Request Body
+- Query Parameters
+- Path Parameters
+- Authentication Requirements
+- Success Responses
+- Error Responses
+- Reusable Schemas
+- Response Examples
 
 ---
 
@@ -163,21 +220,32 @@ Create a `.env` file in the project root.
 Example:
 
 ```env
-PORT=8000
+PORT=4800
+NODE_ENV="development"
+DATABASE_URL="postgresql://postgres:<password>@localhost:5432/<database-name>?schema=public"
+CORS_ORIGIN=http://localhost:4800
 
-DATABASE_URL=
-
+# Google OAuth
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
+GOOGLE_CALLBACK_URL=http://localhost:4800/api/v1/auth/google/callback
 
-JWT_ACCESS_SECRET=
-JWT_REFRESH_SECRET=
+# JWT & Cryptography
+JWT_ACCESS_SECRET=<64-char-string>
+JWT_REFRESH_SECRET=<64-char-string>
+REFRESH_TOKEN_HASH_SECRET=<64-char-string>
 
-ACCESS_TOKEN_EXPIRY=15m
-REFRESH_TOKEN_EXPIRY=7d
+ACCESS_TOKEN_EXPIRES=15m
+REFRESH_TOKEN_EXPIRES=7d
 
-FRONTEND_URL=http://localhost:3000
-FRONTEND_SUCCESS_URL=http://localhost:3000
+# Frontend
+FRONTEND_URL=http://localhost:5173
+FRONTEND_SUCCESS_URL=http://localhost:5173/dashboard
+
+# Razorpay
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+RAZORPAY_WEBHOOK_SECRET=
 ```
 
 ---
@@ -220,10 +288,10 @@ Authenticate using your Google account.
 
 After successful authentication:
 
-* Access Token cookie is created.
-* Refresh Token cookie is created.
-* User session is stored in the database.
-* Browser is redirected to the configured frontend URL.
+- Access Token cookie is created.
+- Refresh Token cookie is created.
+- User session is stored in the database.
+- Browser is redirected to the configured frontend URL.
 
 ---
 
@@ -261,8 +329,8 @@ POST /auth/refresh
 
 The endpoint accepts the Refresh Token from:
 
-* HTTP Only Cookie (recommended)
-* Request Body
+- HTTP Only Cookie (recommended)
+- Request Body
 
 If valid, a new Access Token and Refresh Token are issued.
 
@@ -272,11 +340,28 @@ If valid, a new Access Token and Refresh Token are issued.
 
 These endpoints do not require authentication.
 
-```
-GET /account/{username}
+### Account & Links
+* `GET /account/check-username/{username}` - Check if a username is available
+* `GET /account/{username}` - Get a creator's public profile
+* `GET /links/public/{username}` - Get a creator's public links
 
-GET /links/public/{username}
-```
+### Donations
+* `POST /donations/orders` - Initiate a donation order
+* `POST /donations/verify` - Verify a donation payment signature
+
+### Memberships
+* `GET /memberships/public/{username}` - View a creator's public membership plans
+* `POST /memberships/subscribe` - Initiate a membership subscription (supports guest checkout)
+* `POST /memberships/verify` - Verify a membership subscription payment
+
+### Products & Purchases
+* `GET /products/public/{username}` - View public products of a creator
+* `GET /products/public/{username}/{slug}` - View details of a specific public product
+* `POST /purchases/orders` - Initiate a product purchase order (supports guest checkout)
+* `POST /purchases/verify` - Verify a product purchase payment
+
+### Payment Webhooks
+* `POST /payments/razorpay/webhook` - Razorpay asynchronous payment events webhook
 
 ---
 
@@ -284,31 +369,58 @@ GET /links/public/{username}
 
 Authentication Required.
 
-```
-GET /auth/me
+### Authentication
+* `GET /auth/me` - Get current authenticated user details
+* `POST /auth/logout-all` - Logout from all devices/sessions
 
-POST /auth/logout-all
+### Account & Settings
+* `GET /account` - Get logged-in user profile
+* `PATCH /account` - Update user profile details
+* `GET /account/settings` - Get creator-specific settings
+* `PATCH /account/settings` - Update creator-specific settings
+* `GET /account/analytics` - View creator's profile views, link clicks, sales, and donation earnings
 
-GET /account
+### Links
+* `POST /links` - Create a new link
+* `GET /links` - Retrieve logged-in creator's links
+* `GET /links/{id}` - Retrieve details of a specific link
+* `PATCH /links/{id}` - Update link details
+* `DELETE /links/{id}` - Delete a link
+* `PATCH /links/toggle/{id}` - Toggle active/inactive state of a link
+* `POST /links/duplicate/{id}` - Duplicate an existing link
+* `PATCH /links/reorder` - Reorder links by passing positions
 
-PATCH /account
+### Donations & Memberships
+* `GET /donations/received` - Get list of donations received by the creator
+* `GET /memberships/me` - Get logged-in user's active/past membership subscriptions
+* `POST /memberships/{id}/cancel` - Cancel an active membership subscription
+* `GET /memberships/plans` - View creator's own membership plans
+* `POST /memberships/plans` - Create a new membership plan
+* `PATCH /memberships/plans/{id}` - Update a membership plan
 
-POST /links
+### Products & Sales
+* `GET /products` - View creator's own products list (including drafts)
+* `POST /products` - Create a new digital product (creates a DRAFT)
+* `PATCH /products/{id}` - Update product details
+* `POST /products/{id}/file` - Upload product digital file (multipart/form-data)
+* `POST /products/{id}/thumbnail` - Upload product thumbnail image (multipart/form-data)
+* `POST /products/{id}/publish` - Publish a product to make it public
+* `POST /products/{id}/unpublish` - Revert a product back to DRAFT status
+* `DELETE /products/{id}` - Archive (soft-delete) a product
+* `GET /purchases/sales` - View creator's product sales analytics and list of sales
+* `GET /purchases` - View logged-in buyer's product purchase history
+* `GET /purchases/{id}/download` - Download file of a purchased product (validates license & expiry)
 
-GET /links
+---
 
-GET /links/{id}
+# Admin APIs
 
-PATCH /links/{id}
+Authentication & ADMIN role required.
 
-DELETE /links/{id}
-
-PATCH /links/toggle/{id}
-
-POST /links/duplicate/{id}
-
-PATCH /links/reorder
-```
+* `GET /admin/users` - Retrieve paginated and filtered list of users
+* `PATCH /admin/users/{id}` - Update a user's details, role, or status (e.g., suspend/activate)
+* `GET /admin/creators` - Retrieve list of creators with validation status
+* `GET /admin/reports` - Retrieve platform financial/activity reports
 
 ---
 
@@ -318,9 +430,9 @@ Request validation is implemented using **Zod**.
 
 Validation covers:
 
-* Request Body
-* Path Parameters
-* Query Parameters
+- Request Body
+- Path Parameters
+- Query Parameters
 
 Invalid requests return standardized API errors.
 
@@ -381,11 +493,11 @@ This separation keeps business logic independent from database operations and im
 
 # Tested Using
 
-* Google OAuth 2.0
-* Swagger UI
-* Postman
-* Prisma Studio
-* PostgreSQL
+- Google OAuth 2.0
+- Swagger UI
+- Postman
+- Prisma Studio
+- PostgreSQL
 
 ---
 
@@ -393,12 +505,18 @@ This separation keeps business logic independent from database operations and im
 
 Completed
 
-* Authentication Module
-* Account Module
-* Links Module
-* Swagger Documentation
-* Request Validation
-* JWT Authentication
-* Google OAuth Integration
+- Authentication Module
+- Account & Settings Module (including Analytics)
+- Links Module
+- Donations Module (with Razorpay integration)
+- Memberships Module (Subscription flow & plan management)
+- Digital Products Module (File/thumbnail upload)
+- Purchases Module (Secure buyer downloads)
+- Payments Module (Razorpay Webhook)
+- Admin Module (User & creator management)
+- Swagger Documentation
+- Request Validation
+- JWT Authentication
+- Google OAuth Integration
 
-The project is currently ready for review for the implemented modules.
+The project is currently ready for review for all modules.

@@ -3,164 +3,148 @@ import { ApiError } from "../../utils/ApiError.js";
 import authRepository from "./auth.repository.js";
 
 import {
-    generateAccessToken,
-    generateRefreshToken,
-    verifyRefreshToken,
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
 } from "../../utils/jwt.js";
 
 import { hashRefreshToken } from "../../utils/token.js";
 
 class AuthService {
+  async loginWithGoogle(profile, req) {
+    const user = await authRepository.findOrCreateGoogleUser(profile);
 
-    async loginWithGoogle(profile, req) {
+    const userAgent = req.get("user-agent") || "";
+    const ipAddress =
+      req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
+      req.ip ||
+      req.socket.remoteAddress ||
+      "";
 
-        const user = await authRepository.findOrCreateGoogleUser(profile);
+    // Temporary session
+    const session = await authRepository.createSession({
+      userId: user.id,
+      refreshTokenHash: "",
+      userAgent,
+      ipAddress,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    });
 
-        const userAgent = req.get("user-agent") || "";
-        const ipAddress =
-            req.headers["x-forwarded-for"]?.split(",")[0]?.trim() ||
-            req.ip ||
-            req.socket.remoteAddress ||
-            "";
+    const accessToken = generateAccessToken({
+      userId: user.id,
+      sessionId: session.id,
+    });
 
-        // Temporary session
-        const session = await authRepository.createSession({
-            userId: user.id,
-            refreshTokenHash: "",
-            userAgent,
-            ipAddress,
-            expiresAt: new Date(
-                Date.now() + (7 * 24 * 60 * 60 * 1000)
-            ),
-        });
+    const refreshToken = generateRefreshToken({
+      userId: user.id,
+      sessionId: session.id,
+    });
 
-        const accessToken = generateAccessToken({
-            userId: user.id,
-            sessionId: session.id,
-        });
+    await authRepository.updateSessionToken(
+      session.id,
+      hashRefreshToken(refreshToken),
+    );
 
-        const refreshToken = generateRefreshToken({
-            userId: user.id,
-            sessionId: session.id,
-        });
+    return {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        profilePicture: user.profilePicture,
+        role: user.role,
+        status: user.status,
+      },
+      accessToken,
+      refreshToken,
+    };
+  }
 
-        await authRepository.updateSessionToken(
-            session.id,
-            hashRefreshToken(refreshToken)
-        );
+  async refreshTokens(refreshToken) {
+    let payload;
 
-        return {
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                profilePicture: user.profilePicture,
-                role: user.role,
-                status: user.status,
-            },
-            accessToken,
-            refreshToken,
-        };
+    try {
+      payload = verifyRefreshToken(refreshToken);
+    } catch {
+      throw new ApiError(401, "Invalid refresh token");
     }
 
-    async refreshTokens(refreshToken) {
+    const session = await authRepository.findSessionById(payload.sessionId);
 
-        let payload;
-
-        try {
-            payload = verifyRefreshToken(refreshToken);
-        } catch {
-            throw new ApiError(401, "Invalid refresh token");
-        }
-
-        const session = await authRepository.findSessionById(
-            payload.sessionId
-        );
-
-        if (!session) {
-            throw new ApiError(401, "Session not found");
-        }
-
-        if (session.expiresAt < new Date()) {
-            await authRepository.deleteSession(session.id);
-            throw new ApiError(401, "Session expired");
-        }
-
-        const hashed = hashRefreshToken(refreshToken);
-
-        if (hashed !== session.refreshToken) {
-            throw new ApiError(
-                401,
-                "Refresh token is invalid or has already been used. Please login again."
-            );
-        }
-
-        const user = await authRepository.findUserById(payload.userId);
-
-        if (!user) {
-            throw new ApiError(401, "User not found");
-        }
-
-        const newAccessToken = generateAccessToken({
-            userId: user.id,
-            sessionId: session.id,
-        });
-
-        await authRepository.updateSessionToken(
-            session.id,
-            hashed
-        );
-
-        return {
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                profilePicture: user.profilePicture,
-                role: user.role,
-                status: user.status,
-            },
-            accessToken: newAccessToken,
-            refreshToken,
-        };
+    if (!session) {
+      throw new ApiError(401, "Session not found");
     }
 
-    async logout(sessionId) {
-
-        const session =
-            await authRepository.findSessionById(sessionId);
-
-        if (!session) {
-            return;
-        }
-
-        await authRepository.deleteSession(sessionId);
+    if (session.expiresAt < new Date()) {
+      await authRepository.deleteSession(session.id);
+      throw new ApiError(401, "Session expired");
     }
 
-    async logoutAll(userId) {
+    const hashed = hashRefreshToken(refreshToken);
 
-        await authRepository.deleteAllSessions(userId);
-
+    if (hashed !== session.refreshToken) {
+      throw new ApiError(
+        401,
+        "Refresh token is invalid or has already been used. Please login again.",
+      );
     }
 
-    async getCurrentUser(userId) {
+    const user = await authRepository.findUserById(payload.userId);
 
-        const user = await authRepository.findUserById(userId);
-
-        if (!user) {
-            throw new ApiError(404, "User not found");
-        }
-
-        return {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            profilePicture: user.profilePicture,
-            role: user.role,
-            status: user.status,
-        };
+    if (!user) {
+      throw new ApiError(401, "User not found");
     }
 
+    const newAccessToken = generateAccessToken({
+      userId: user.id,
+      sessionId: session.id,
+    });
+
+    await authRepository.updateSessionToken(session.id, hashed);
+
+    return {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        profilePicture: user.profilePicture,
+        role: user.role,
+        status: user.status,
+      },
+      accessToken: newAccessToken,
+      refreshToken,
+    };
+  }
+
+  async logout(sessionId) {
+    const session = await authRepository.findSessionById(sessionId);
+
+    if (!session) {
+      return;
+    }
+
+    await authRepository.deleteSession(sessionId);
+  }
+
+  async logoutAll(userId) {
+    await authRepository.deleteAllSessions(userId);
+  }
+
+  async getCurrentUser(userId) {
+    const user = await authRepository.findUserById(userId);
+
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      profilePicture: user.profilePicture,
+      role: user.role,
+      status: user.status,
+    };
+  }
 }
 
 export default new AuthService();

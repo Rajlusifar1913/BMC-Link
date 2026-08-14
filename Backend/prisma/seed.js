@@ -5,53 +5,43 @@ import prisma from "../src/config/prisma.js";
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 
 if (!ADMIN_EMAIL) {
-    throw new Error(
-        "ADMIN_EMAIL is required in the environment variables"
-    );
+  throw new Error("ADMIN_EMAIL is required in the environment variables");
 }
 
 async function main() {
+  const admin = await prisma.user.upsert({
+    where: {
+      email: ADMIN_EMAIL,
+    },
 
-    const admin = await prisma.user.upsert({
+    update: {
+      role: "ADMIN",
+      status: "ACTIVE",
+    },
 
-        where: {
-            email: ADMIN_EMAIL
-        },
+    create: {
+      email: ADMIN_EMAIL,
+      role: "ADMIN",
+      status: "ACTIVE",
+    },
+  });
 
-        update: {
-            role: "ADMIN",
-            status: "ACTIVE"
-        },
-
-        create: {
-            email: ADMIN_EMAIL,
-            role: "ADMIN",
-            status: "ACTIVE"
-        }
-
-    });
-
-    console.log("Admin user seeded successfully:");
-    console.log({
-        id: admin.id,
-        email: admin.email,
-        role: admin.role,
-        status: admin.status
-    });
-
+  console.log("Admin user seeded successfully:");
+  console.log({
+    id: admin.id,
+    email: admin.email,
+    role: admin.role,
+    status: admin.status,
+  });
 }
 
 main()
-    .catch((error) => {
+  .catch((error) => {
+    console.error("Admin seeding failed:");
+    console.error(error);
 
-        console.error("Admin seeding failed:");
-        console.error(error);
-
-        process.exit(1);
-
-    })
-    .finally(async () => {
-
-        await prisma.$disconnect();
-
-    });
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

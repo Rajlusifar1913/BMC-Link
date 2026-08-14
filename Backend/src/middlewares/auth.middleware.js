@@ -5,56 +5,54 @@ import { ApiError } from "../utils/ApiError.js";
 import { verifyAccessToken } from "../utils/jwt.js";
 
 export const verifyJWT = asyncHandler(async (req, res, next) => {
+  const bearerToken = req.headers.authorization?.startsWith("Bearer ")
+    ? req.headers.authorization.split(" ")[1]
+    : null;
 
-    const bearerToken = req.headers.authorization?.startsWith("Bearer ")
-        ? req.headers.authorization.split(" ")[1]
-        : null;
+  const accessToken = req.cookies?.accessToken || bearerToken;
 
-    const accessToken =
-        req.cookies?.accessToken || bearerToken;
+  if (!accessToken) {
+    throw new ApiError(401, "Authentication required");
+  }
 
-    if (!accessToken) {
-        throw new ApiError(401, "Authentication required");
-    }
+  let payload;
 
-    let payload;
+  try {
+    payload = verifyAccessToken(accessToken);
+  } catch {
+    throw new ApiError(401, "Invalid or expired access token");
+  }
 
-    try {
-        payload = verifyAccessToken(accessToken);
-    } catch {
-        throw new ApiError(401, "Invalid or expired access token");
-    }
+  const user = await prisma.user.findFirst({
+    where: {
+      id: payload.userId,
+      deletedAt: null,
+      status: "ACTIVE",
+    },
+  });
 
-    const user = await prisma.user.findFirst({
-        where: {
-            id: payload.userId,
-            deletedAt: null,
-            status: "ACTIVE",
-        },
-    });
+  if (!user) {
+    throw new ApiError(401, "User not found");
+  }
 
-    if (!user) {
-        throw new ApiError(401, "User not found");
-    }
+  req.user = user;
+  req.sessionId = payload.sessionId;
 
-    req.user = user;
-    req.sessionId = payload.sessionId;
-
-    next();
+  next();
 });
 
 export const authorizeRoles = (...roles) => {
-    return (req, res, next) => {
-        if (!req.user) {
-            throw new ApiError(401, "Authentication required");
-        }
+  return (req, res, next) => {
+    if (!req.user) {
+      throw new ApiError(401, "Authentication required");
+    }
 
-        if (!roles.includes(req.user.role)) {
-            throw new ApiError(403, "You are not authorized to access this resource");
-        }
+    if (!roles.includes(req.user.role)) {
+      throw new ApiError(403, "You are not authorized to access this resource");
+    }
 
-        next();
-    };
+    next();
+  };
 };
 
 export const authenticate = verifyJWT;
