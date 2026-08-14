@@ -665,6 +665,18 @@ const options = {
           example: "8d75f70f-5a75-4a5d-a26b-8d8f6e8dc111",
         },
 
+        ProductId: {
+          name: "id",
+          in: "path",
+          required: true,
+          description: "Unique Product ID",
+          schema: {
+            type: "string",
+            format: "uuid",
+          },
+          example: "8d75f70f-5a75-4a5d-a26b-8d8f6e8dc222",
+        },
+
         Username: {
           name: "username",
           in: "path",
@@ -942,8 +954,20 @@ const options = {
         description: "Creator link management APIs",
       },
       {
-        name: "Health",
-        description: "Health check endpoints",
+        name: "Donations",
+        description: "Donation and Razorpay payment APIs",
+      },
+      {
+        name: "Products",
+        description: "Digital product management and public product APIs",
+      },
+      {
+        name: "Purchases",
+        description: "Digital product purchase, sales and download APIs",
+      },
+      {
+        name: "Payments",
+        description: "Razorpay payment order, checkout verification and webhook APIs",
       },
     ],
   },

@@ -43,7 +43,7 @@ class PaymentService {
       });
       await prisma.payment.update({
         where: { id: payment.id },
-        data: { gatewayOrderId: order.id, orderId: payment.id },
+        data: { gatewayOrderId: order.id },
       });
       return {
         paymentId: payment.id,

@@ -10,3 +10,24 @@ export const webhook = asyncHandler(async (req, res) => {
   );
   res.status(200).json(new ApiResponse(200, result, "Webhook received"));
 });
+
+export const createOrder = asyncHandler(async (req, res) => {
+  const { userId, paymentType, amount, metadata } = req.body;
+  const result = await paymentService.createOrder({
+    userId,
+    paymentType,
+    amount,
+    metadata,
+  });
+  res.status(201).json(new ApiResponse(201, result, "Order created successfully"));
+});
+
+export const verifyCheckout = asyncHandler(async (req, res) => {
+  const { orderId, paymentId, signature } = req.body;
+  const result = await paymentService.verifyCheckout({
+    orderId,
+    paymentId,
+    signature,
+  });
+  res.status(200).json(new ApiResponse(200, result, "Payment verified successfully"));
+});

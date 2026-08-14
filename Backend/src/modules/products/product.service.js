@@ -15,23 +15,26 @@ class ProductService {
       candidate = `${slug}-${n++}`;
     return candidate;
   }
+  
   async create(creatorId, data) {
     const slug = await this.uniqueSlug(data.title);
+    const { tagIds, ...fields } = data;
+
     if (
-      data.categoryId &&
+      fields.categoryId &&
       !(await prisma.productCategory.findUnique({
-        where: { id: data.categoryId },
+        where: { id: fields.categoryId },
       }))
     )
       throw new ApiError(404, "Category not found");
+
     return prisma.digitalProduct.create({
       data: {
-        ...data,
-        tagIds: undefined,
+        ...fields,
         creatorId,
         slug,
-        tags: data.tagIds
-          ? { create: data.tagIds.map((tagId) => ({ tagId })) }
+        tags: tagIds
+          ? { create: tagIds.map((tagId) => ({ tagId })) }
           : undefined,
       },
       include: details,
