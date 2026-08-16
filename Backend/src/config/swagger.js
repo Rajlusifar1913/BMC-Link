@@ -1,6 +1,25 @@
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 
+import { getServerBaseUrl } from "../utils/security.js";
+
+const isProduction = process.env.NODE_ENV === "production";
+
+const apis = [
+  "./src/docs/*.js",
+  "./src/modules/auth/*.swagger.js",
+  "./src/modules/account/*.swagger.js",
+  "./src/modules/links/*.swagger.js",
+  "./src/modules/admin/*.swagger.js",
+  "./src/modules/donations/*.swagger.js",
+  "./src/modules/products/*.swagger.js",
+  "./src/modules/purchases/*.swagger.js",
+  "./src/modules/memberships/*.swagger.js",
+];
+if (!isProduction) {
+  apis.push("./src/modules/payments/*.swagger.js");
+}
+
 const options = {
   definition: {
     openapi: "3.0.3",
@@ -17,8 +36,8 @@ const options = {
 
     servers: [
       {
-        url: `http://localhost:${process.env.PORT}/api/v1`,
-        description: "Local Development Server",
+        url: `${getServerBaseUrl()}/api/v1`,
+        description: process.env.NODE_ENV === "production" ? "Production Server" : "Local Development Server",
       },
     ],
 
@@ -972,7 +991,7 @@ const options = {
     ],
   },
 
-  apis: ["./src/docs/*.js", "./src/modules/**/*.swagger.js"],
+  apis
 };
 
 const swaggerSpec = swaggerJsdoc(options);

@@ -31,7 +31,7 @@ authRoutes.post(
   authController.refresh,
 );
 
-authRoutes.post("/logout", authController.logout);
+authRoutes.post("/logout", authenticate, authController.logout);
 
 authRoutes.post("/logout-all", authenticate, authController.logoutAll);
 

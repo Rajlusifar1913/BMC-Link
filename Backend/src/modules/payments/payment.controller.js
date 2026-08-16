@@ -12,9 +12,9 @@ export const webhook = asyncHandler(async (req, res) => {
 });
 
 export const createOrder = asyncHandler(async (req, res) => {
-  const { userId, paymentType, amount, metadata } = req.body;
+  const { paymentType, amount, metadata } = req.body;
   const result = await paymentService.createOrder({
-    userId,
+    userId: req.user?.id ?? null,
     paymentType,
     amount,
     metadata,
