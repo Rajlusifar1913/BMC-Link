@@ -4,42 +4,54 @@ import { useAuth } from "@/context/AuthContext";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  /** Where to redirect if not authenticated. Defaults to /login */
+  /** Where to redirect if not authenticated. Defaults to / */
   redirectTo?: string;
+  /** Optional role required to access this route. If not met, redirected to fallback */
+  requiredRole?: "ADMIN" | "CREATOR";
+  /** Fallback URL if role check fails. Defaults to /dashboard */
+  roleFallback?: string;
 }
 
 /**
- * Wraps any page content that requires authentication.
- * Shows a loading spinner while the auth state is resolving,
- * then either renders children or redirects to /login.
+ * Wraps any page content that requires authentication or specific roles.
+ * Shows a loading spinner while auth state is resolving,
+ * then enforces authentication and role-based access control.
  */
 export function ProtectedRoute({
   children,
-  redirectTo = "/login",
+  redirectTo = "/",
+  requiredRole,
+  roleFallback = "/dashboard",
 }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate(redirectTo, { replace: true });
+    if (!isLoading) {
+      if (!isAuthenticated) {
+        navigate(redirectTo, { replace: true });
+      } else if (requiredRole && user?.role !== requiredRole) {
+        navigate(roleFallback, { replace: true });
+      }
     }
-  }, [isLoading, isAuthenticated, redirectTo, navigate]);
+  }, [isLoading, isAuthenticated, user, requiredRole, redirectTo, roleFallback, navigate]);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-nu-bg flex items-center justify-center">
+      <div className="min-h-screen bg-nu-bg dark:bg-[#0C0614] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          {/* Spinner using existing nu-purple token */}
           <div className="w-12 h-12 rounded-full border-4 border-nu-purple/20 border-t-nu-purple animate-spin" />
-          <p className="text-sm font-medium text-nu-muted">Loading…</p>
+          <p className="text-sm font-medium text-nu-muted dark:text-gray-400">Loading…</p>
         </div>
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    // Redirect is in progress — render nothing to avoid flash
+    return null;
+  }
+
+  if (requiredRole && user?.role !== requiredRole) {
     return null;
   }
 

@@ -61,7 +61,7 @@ export function ProductFeatureGrid() {
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, margin: "-60px" }}
+          viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="text-center max-w-2xl mx-auto mb-16"
         >
@@ -78,15 +78,14 @@ export function ProductFeatureGrid() {
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: false, margin: "-50px" }}
+          viewport={{ once: true, margin: "-50px" }}
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
         >
           {features.map((f, i) => (
             <motion.div
               key={i}
               variants={cardVariants}
-              whileHover={{ y: -6, transition: { duration: 0.2 } }}
-              className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-nu-soft transition-all duration-300 flex flex-col gap-4"
+              className="bg-white dark:bg-[#180F26] rounded-3xl p-8 border border-gray-100 dark:border-white/10 shadow-sm hover:shadow-nu-card dark:hover:border-nu-purple/30 transition-all duration-200 flex flex-col gap-4"
             >
               <div className="w-12 h-12 rounded-2xl bg-nu-purple-soft flex items-center justify-center">
                 {f.icon}

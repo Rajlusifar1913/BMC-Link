@@ -14,9 +14,29 @@ import {
   User as UserIcon,
   Share2,
   Check,
+  Heart,
+  Coffee,
+  Award,
+  Package,
+  Calendar,
+  Mail,
+  ChevronRight,
+  CheckCircle2,
+  ShieldCheck,
 } from "lucide-react";
 import { getPublicLinks } from "@/lib/links";
-import type { Link as LinkType, PublicProfile } from "@/lib/types";
+import { getPublicPlans } from "@/lib/memberships";
+import { getPublicProducts } from "@/lib/products";
+import { preloadRazorpayScript } from "@/lib/razorpay";
+import { DonationModal } from "@/components/Modals/DonationModal";
+import { SubscribeModal } from "@/components/Modals/SubscribeModal";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import type {
+  DigitalProduct,
+  Link as LinkType,
+  MembershipPlan,
+  PublicProfile,
+} from "@/lib/types";
 import { motion, AnimatePresence } from "framer-motion";
 
 // ─── Link type icons & colors ─────────────────────────────────────────────────
@@ -58,41 +78,64 @@ function Skeleton() {
   );
 }
 
-const listVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.1 },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: "easeOut" as const },
-  },
-};
-
 export function PublicProfilePage() {
   const { username } = useParams<{ username: string }>();
 
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [links, setLinks] = useState<LinkType[]>([]);
+  const [plans, setPlans] = useState<MembershipPlan[]>([]);
+  const [products, setProducts] = useState<DigitalProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  // Modals state
+  const [isDonateOpen, setIsDonateOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<MembershipPlan | null>(null);
 
   // Share state
   const [copied, setCopied] = useState(false);
 
+  // Preload payment script on idle for instant donations & membership checkouts
+  useEffect(() => {
+    preloadRazorpayScript();
+  }, []);
+
   useEffect(() => {
     if (!username) return;
     (async () => {
+      setLoading(true);
+      setNotFound(false);
       try {
-        const data = await getPublicLinks(username);
-        setProfile(data);
-        setLinks((data as unknown as { links: LinkType[] }).links ?? []);
+        // Fetch public links, membership plans, and products simultaneously in parallel
+        const [linksRes, plansRes, prodsRes] = await Promise.allSettled([
+          getPublicLinks(username),
+          getPublicPlans(username),
+          getPublicProducts(username),
+        ]);
+
+        if (linksRes.status === "fulfilled") {
+          const linkData = linksRes.value;
+          setProfile(linkData);
+          setLinks((linkData as unknown as { links: LinkType[] }).links ?? []);
+        } else {
+          const status = (linksRes.reason as { status?: number })?.status;
+          if (status === 404) {
+            setNotFound(true);
+            return;
+          }
+        }
+
+        if (plansRes.status === "fulfilled") {
+          setPlans(plansRes.value);
+        } else {
+          setPlans([]);
+        }
+
+        if (prodsRes.status === "fulfilled") {
+          setProducts(prodsRes.value);
+        } else {
+          setProducts([]);
+        }
       } catch (err: unknown) {
         const status = (err as { status?: number })?.status;
         if (status === 404) setNotFound(true);
@@ -167,6 +210,12 @@ export function PublicProfilePage() {
   const website = cp?.website ?? rawData?.website;
   const accentColor = cp?.accentColor ?? rawData?.accentColor ?? "#820AD1";
 
+  const creatorSettings = rawData?.user?.creatorSettings || cp?.user?.creatorSettings;
+  const allowDonations = creatorSettings ? creatorSettings.allowDonations : true;
+  const allowMemberships = creatorSettings ? creatorSettings.allowMemberships : true;
+  const allowProducts = creatorSettings ? creatorSettings.allowProducts : true;
+  const showEmail = creatorSettings ? creatorSettings.showEmail : false;
+
   const sortedLinks = [...links].sort((a, b) => {
     if (a.isFeatured && !b.isFeatured) return -1;
     if (!a.isFeatured && b.isFeatured) return 1;
@@ -174,7 +223,12 @@ export function PublicProfilePage() {
   });
 
   return (
-    <div className="min-h-screen bg-nu-bg pb-16">
+    <div className="min-h-screen bg-nu-bg pb-16 relative">
+      {/* Top Floating Controls */}
+      <div className="absolute top-3 right-3 sm:top-4 sm:right-6 z-20 flex items-center gap-2">
+        <ThemeToggle className="bg-white/80 dark:bg-black/60 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-sm" />
+      </div>
+
       {/* Cover image */}
       <motion.div
         initial={{ opacity: 0, scale: 1.02 }}
@@ -201,6 +255,8 @@ export function PublicProfilePage() {
             <img
               src={avatarSrc}
               alt={displayName}
+              loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover"
             />
           ) : (
@@ -209,10 +265,21 @@ export function PublicProfilePage() {
         </motion.div>
 
         <div>
-          <h1 className="text-2xl font-extrabold text-nu-charcoal">
-            {displayName}
-          </h1>
-          {profileUsername && <p className="text-sm text-nu-muted font-medium">@{profileUsername}</p>}
+          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+            <h1 className="text-2xl font-extrabold text-nu-charcoal">
+              {displayName}
+            </h1>
+            {profile?.user?.isVerified && (
+              <span
+                title="Verified Creator"
+                className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800 px-2 py-0.5 rounded-full text-xs font-bold shadow-2xs"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 fill-blue-500 text-white" />
+                <span className="text-[11px]">Verified</span>
+              </span>
+            )}
+          </div>
+          {profileUsername && <p className="text-sm text-nu-muted font-medium mt-0.5">@{profileUsername}</p>}
         </div>
 
         {headline && (
@@ -230,83 +297,97 @@ export function PublicProfilePage() {
           </p>
         )}
 
-        {website && (
-          <a
-            href={website}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-sm font-semibold text-nu-purple hover:text-nu-purple-hover transition-colors"
+        <div className="flex items-center gap-3 flex-wrap justify-center">
+          {website && (
+            <a
+              href={website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-xs font-semibold text-nu-purple hover:text-nu-purple-hover transition-colors"
+            >
+              <Globe className="w-3.5 h-3.5" />
+              {website.replace(/^https?:\/\//, "")}
+            </a>
+          )}
+
+          {showEmail && rawData?.user?.email && (
+            <a
+              href={`mailto:${rawData.user.email}`}
+              className="flex items-center gap-1.5 text-xs font-semibold text-nu-muted hover:text-nu-charcoal transition-colors"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              {rawData.user.email}
+            </a>
+          )}
+        </div>
+
+        {/* Action Buttons: Donate & Share */}
+        <div className="flex items-center gap-2.5 mt-1 flex-wrap justify-center">
+          {allowDonations && (
+            <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              onClick={() => setIsDonateOpen(true)}
+              className="flex items-center gap-2 text-xs font-bold text-white bg-rose-500 hover:bg-rose-600 rounded-full px-5 py-2.5 transition-all shadow-md active:scale-95"
+            >
+              <Coffee className="w-4 h-4" />
+              <span>Buy me a coffee</span>
+            </motion.button>
+          )}
+
+          <motion.button
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            onClick={handleShare}
+            className="flex items-center gap-2 text-xs font-semibold border-2 rounded-full px-4 py-2 transition-all"
+            style={{
+              borderColor: `${accentColor}40`,
+              color: accentColor,
+              backgroundColor: `${accentColor}0d`,
+            }}
           >
-            <Globe className="w-4 h-4" />
-            {website.replace(/^https?:\/\//, "")}
-          </a>
-        )}
+            <AnimatePresence mode="wait" initial={false}>
+              {copied ? (
+                <motion.span
+                  key="check"
+                  initial={{ scale: 0.7, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.7, opacity: 0 }}
+                  className="flex items-center gap-1.5"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  Link copied!
+                </motion.span>
+              ) : (
+                <motion.span
+                  key="share"
+                  initial={{ scale: 0.7, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.7, opacity: 0 }}
+                  className="flex items-center gap-1.5"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  Share profile
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </motion.button>
+        </div>
 
-        {/* Share Button */}
-        <motion.button
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          onClick={handleShare}
-          className="flex items-center gap-2 text-xs font-semibold border-2 rounded-full px-4 py-2 transition-all"
-          style={{
-            borderColor: `${accentColor}40`,
-            color: accentColor,
-            backgroundColor: `${accentColor}0d`,
-          }}
-        >
-          <AnimatePresence mode="wait" initial={false}>
-            {copied ? (
-              <motion.span
-                key="check"
-                initial={{ scale: 0.7, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.7, opacity: 0 }}
-                className="flex items-center gap-1.5"
-              >
-                <Check className="w-3.5 h-3.5" />
-                Link copied!
-              </motion.span>
-            ) : (
-              <motion.span
-                key="share"
-                initial={{ scale: 0.7, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.7, opacity: 0 }}
-                className="flex items-center gap-1.5"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                Share profile
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </motion.button>
-
-        {/* Links Staggered Reveal */}
-        <motion.div
-          variants={listVariants}
-          initial="hidden"
-          animate="visible"
-          className="w-full mt-4 flex flex-col gap-3"
-        >
-          {sortedLinks.length === 0 ? (
-            <div className="py-10 text-center">
-              <p className="text-sm text-nu-muted">No links yet.</p>
-            </div>
-          ) : (
+        {/* ── Links Section ─────────────────────────────────────────────── */}
+        <div className="w-full mt-4 flex flex-col gap-3">
+          {sortedLinks.length > 0 && (
             sortedLinks.map((link) => {
               const iconClass = LINK_BG[link.type] ?? LINK_BG.CUSTOM;
 
               return (
-                <motion.a
+                <a
                   key={link.id}
-                  variants={itemVariants}
-                  whileHover={{ y: -3, scale: 1.01 }}
-                  whileTap={{ scale: 0.98 }}
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex items-center gap-4 bg-white hover:bg-nu-purple-soft rounded-2xl border border-gray-100 hover:border-nu-purple/20 px-4 py-3.5 shadow-sm hover:shadow-nu-soft transition-all duration-200 text-left"
+                  className="group flex items-center gap-4 bg-white hover:bg-nu-purple-soft rounded-2xl border border-gray-100 hover:border-nu-purple/20 px-4 py-3.5 shadow-sm hover:shadow-nu-soft hover:-translate-y-0.5 active:scale-[0.99] transition-all duration-200 text-left will-change-transform"
                   style={link.isFeatured ? { borderColor: `${accentColor}40` } : undefined}
                 >
                   <div
@@ -330,11 +411,110 @@ export function PublicProfilePage() {
                   </div>
 
                   <ExternalLink className="w-4 h-4 text-nu-muted shrink-0 group-hover:text-nu-purple transition-colors" />
-                </motion.a>
+                </a>
               );
             })
           )}
-        </motion.div>
+        </div>
+
+        {/* ── Membership Tiers Showcase ──────────────────────────────────── */}
+        {allowMemberships && plans.length > 0 && (
+          <div className="w-full mt-6 text-left flex flex-col gap-3">
+            <div className="flex items-center gap-2 px-1">
+              <Award className="w-4 h-4 text-nu-purple" />
+              <h2 className="text-sm font-bold text-nu-charcoal uppercase tracking-wider">
+                Membership Tiers
+              </h2>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {plans.map((plan) => (
+                <div
+                  key={plan.id}
+                  className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm hover:shadow-nu-soft transition-all flex flex-col gap-2.5"
+                >
+                  <div className="flex items-baseline justify-between">
+                    <h3 className="text-sm font-bold text-nu-charcoal">{plan.name}</h3>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-lg font-extrabold text-nu-purple">
+                        ₹{Number(plan.price).toLocaleString("en-IN")}
+                      </span>
+                      <span className="text-[11px] text-nu-muted">/ {plan.durationDays}d</span>
+                    </div>
+                  </div>
+
+                  {plan.description && (
+                    <p className="text-xs text-nu-muted leading-relaxed">
+                      {plan.description}
+                    </p>
+                  )}
+
+                  <button
+                    onClick={() => setSelectedPlan(plan)}
+                    className="w-full mt-1 bg-nu-purple-soft hover:bg-nu-purple text-nu-purple hover:text-white font-bold text-xs py-2 rounded-xl transition-all shadow-xs"
+                  >
+                    Join {plan.name}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Digital Products Showcase ─────────────────────────────────── */}
+        {allowProducts && products.length > 0 && (
+          <div className="w-full mt-6 text-left flex flex-col gap-3">
+            <div className="flex items-center gap-2 px-1">
+              <Package className="w-4 h-4 text-nu-purple" />
+              <h2 className="text-sm font-bold text-nu-charcoal uppercase tracking-wider">
+                Digital Products & Downloads
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {products.map((product) => (
+                <Link
+                  key={product.id}
+                  to={`/${profileUsername}/products/${product.slug}`}
+                  className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-nu-card transition-all flex flex-col justify-between group"
+                >
+                  {product.thumbnail ? (
+                    <div className="h-28 bg-gray-100 overflow-hidden">
+                      <img
+                        src={product.thumbnail}
+                        alt={product.title}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-24 bg-nu-purple-soft/60 flex items-center justify-center text-nu-purple">
+                      <Package className="w-8 h-8" />
+                    </div>
+                  )}
+
+                  <div className="p-3.5 flex flex-col gap-1.5 flex-1 justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold text-nu-charcoal line-clamp-2 group-hover:text-nu-purple transition-colors">
+                        {product.title}
+                      </h4>
+                    </div>
+
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                      <span className="text-sm font-extrabold text-nu-purple">
+                        ₹{Number(product.price).toLocaleString("en-IN")}
+                      </span>
+                      <span className="text-[11px] font-semibold text-nu-purple flex items-center gap-0.5">
+                        Buy <ChevronRight className="w-3 h-3" />
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Footer attribution */}
         <div className="mt-8 flex flex-col items-center gap-1">
@@ -349,6 +529,22 @@ export function PublicProfilePage() {
           </Link>
         </div>
       </div>
+
+      {/* Modals */}
+      <DonationModal
+        isOpen={isDonateOpen}
+        username={profileUsername || username || ""}
+        creatorName={displayName}
+        avatarSrc={avatarSrc}
+        onClose={() => setIsDonateOpen(false)}
+      />
+
+      <SubscribeModal
+        isOpen={Boolean(selectedPlan)}
+        plan={selectedPlan}
+        creatorName={displayName}
+        onClose={() => setSelectedPlan(null)}
+      />
     </div>
   );
 }

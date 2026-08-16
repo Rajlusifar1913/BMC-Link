@@ -47,7 +47,7 @@ export function NewsCarousel() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, margin: "-60px" }}
+          viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.5 }}
           className="flex items-center justify-between mb-12"
         >
@@ -66,15 +66,14 @@ export function NewsCarousel() {
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: false, margin: "-50px" }}
+          viewport={{ once: true, margin: "-50px" }}
           className="grid grid-cols-1 md:grid-cols-3 gap-6"
         >
           {news.map((item, idx) => (
             <motion.div
               key={idx}
               variants={cardVariants}
-              whileHover={{ y: -4, transition: { duration: 0.2 } }}
-              className="bg-nu-bg rounded-3xl p-6 border border-gray-100/80 shadow-sm hover:border-nu-purple/30 transition-all flex flex-col justify-between gap-4"
+              className="bg-nu-bg dark:bg-[#180F26] rounded-3xl p-6 border border-gray-100/80 dark:border-white/10 shadow-sm hover:border-nu-purple/40 hover:shadow-md transition-all duration-200 flex flex-col justify-between gap-4"
             >
               <div className="flex flex-col gap-3">
                 <div className="flex justify-between items-center text-xs font-bold text-nu-muted">

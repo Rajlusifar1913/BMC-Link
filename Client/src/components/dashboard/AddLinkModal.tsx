@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
   Globe,
@@ -193,16 +194,29 @@ export function AddLinkModal({
   const isEditing = !!editingLink;
 
   return (
-    // Backdrop
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      {/* Blur overlay */}
-      <div className="absolute inset-0 bg-nu-charcoal/40 backdrop-blur-sm" />
+    <AnimatePresence>
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={(e) => e.target === e.currentTarget && onClose()}
+        >
+          {/* Blur overlay */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+            className="absolute inset-0 bg-nu-charcoal/40 backdrop-blur-sm"
+          />
 
-      {/* Modal Panel */}
-      <div className="relative z-10 w-full max-w-lg bg-white rounded-3xl shadow-nu-elevated overflow-hidden max-h-[90vh] flex flex-col">
+          {/* Modal Panel */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94, y: 14 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.94, y: 14 }}
+            transition={{ type: "spring", damping: 28, stiffness: 380 }}
+            className="relative z-10 w-full max-w-lg bg-white rounded-3xl shadow-nu-elevated overflow-hidden max-h-[90vh] flex flex-col"
+          >
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100 shrink-0">
@@ -409,7 +423,9 @@ export function AddLinkModal({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+        </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }

@@ -46,7 +46,7 @@ export function Footer() {
             <a href="#safety" className="text-xs text-gray-400 hover:text-white transition-colors">
               Security Protocol
             </a>
-            <a href="http://localhost:4900/api-docs" target="_blank" rel="noreferrer" className="text-xs text-gray-400 hover:text-white transition-colors">
+            <a href="/api-docs" target="_blank" rel="noreferrer" className="text-xs text-gray-400 hover:text-white transition-colors">
               Swagger API Docs
             </a>
             <span className="text-xs text-gray-400">Privacy Policy</span>

@@ -27,15 +27,19 @@ const features = [
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function LoginPage() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const navigate = useNavigate();
 
-  // If already logged in, go straight to dashboard
+  // If already logged in, redirect based on role
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      navigate("/dashboard", { replace: true });
+    if (!isLoading && isAuthenticated && user) {
+      if (user.role === "ADMIN") {
+        navigate("/admin", { replace: true });
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
     }
-  }, [isLoading, isAuthenticated, navigate]);
+  }, [isLoading, isAuthenticated, user, navigate]);
 
   if (isLoading) {
     return (

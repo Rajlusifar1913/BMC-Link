@@ -3,7 +3,7 @@ import type { ApiResponse } from "./types";
 // ─── Base URL ─────────────────────────────────────────────────────────────────
 
 const BASE_URL =
-  import.meta.env.VITE_API_URL ?? "http://localhost:4800";
+  import.meta.env.VITE_API_URL || "";
 
 // ─── Custom Error Class ───────────────────────────────────────────────────────
 
@@ -32,8 +32,10 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const url = `${BASE_URL}${path}`;
 
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
+
   const headers: HeadersInit = {
-    ...(options.body ? { "Content-Type": "application/json" } : {}),
+    ...(options.body && !isFormData ? { "Content-Type": "application/json" } : {}),
     ...(options.headers ?? {}),
   };
 

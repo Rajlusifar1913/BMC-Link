@@ -51,15 +51,14 @@ export function SocialProof() {
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: false, margin: "-40px" }}
+          viewport={{ once: true, margin: "-40px" }}
           className="grid grid-cols-2 md:grid-cols-4 gap-8"
         >
           {stats.map((s, idx) => (
             <motion.div
               key={idx}
               variants={cardVariants}
-              whileHover={{ y: -4, transition: { duration: 0.2 } }}
-              className="flex flex-col items-center text-center p-6 bg-nu-bg rounded-3xl border border-gray-100/80 shadow-sm"
+              className="flex flex-col items-center text-center p-6 bg-nu-bg dark:bg-[#180F26] rounded-3xl border border-gray-100/80 dark:border-white/10 shadow-sm hover:shadow-md transition-all duration-200"
             >
               <div className="w-10 h-10 rounded-2xl bg-nu-purple-soft flex items-center justify-center mb-3 shadow-inner">
                 {s.icon}

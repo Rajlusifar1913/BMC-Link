@@ -4,6 +4,9 @@ import type {
   PublicProfile,
   UpdateProfilePayload,
   CheckUsernameResult,
+  CreatorSettings,
+  UpdateSettingsPayload,
+  CreatorAnalytics,
 } from "./types";
 
 const ACCOUNT = "/api/v1/account";
@@ -46,3 +49,30 @@ export function checkUsername(
     `${ACCOUNT}/check-username/${encodeURIComponent(username)}`
   );
 }
+
+/**
+ * GET /api/v1/account/settings
+ * Returns creator monetization & visibility settings.
+ */
+export function getSettings(): Promise<CreatorSettings> {
+  return apiGet<CreatorSettings>(`${ACCOUNT}/settings`);
+}
+
+/**
+ * PATCH /api/v1/account/settings
+ * Updates creator monetization & visibility settings.
+ */
+export function updateSettings(
+  payload: UpdateSettingsPayload
+): Promise<CreatorSettings> {
+  return apiPatch<CreatorSettings>(`${ACCOUNT}/settings`, payload);
+}
+
+/**
+ * GET /api/v1/account/analytics
+ * Returns creator analytics (views, clicks, donations, sales, revenue).
+ */
+export function getAnalytics(): Promise<CreatorAnalytics> {
+  return apiGet<CreatorAnalytics>(`${ACCOUNT}/analytics`);
+}
+

@@ -14,9 +14,40 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:4900',
+        target: 'http://localhost:4800',
         changeOrigin: true,
         secure: false,
+      },
+      '/storage': {
+        target: 'http://localhost:4800',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api-docs': {
+        target: 'http://localhost:4800',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
+  build: {
+    target: 'esnext',
+    cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
+              return 'vendor-react';
+            }
+            if (id.includes('framer-motion')) {
+              return 'vendor-motion';
+            }
+            if (id.includes('lucide-react')) {
+              return 'vendor-icons';
+            }
+          }
+        },
       },
     },
   },

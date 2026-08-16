@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Globe,
   Youtube,
@@ -53,7 +53,7 @@ interface LinkCardProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function LinkCard({
+function LinkCardComponent({
   link,
   onEdit,
   onDelete,
@@ -65,6 +65,15 @@ export function LinkCard({
   const [deleting, setDeleting] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
+  const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (deleteTimerRef.current) {
+        clearTimeout(deleteTimerRef.current);
+      }
+    };
+  }, []);
 
   // ── Delete Flow ───────────────────────────────────────────────────────────────
 
@@ -72,15 +81,18 @@ export function LinkCard({
     if (!confirmingDelete) {
       // First click: arm the confirmation
       setConfirmingDelete(true);
+      if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
       // Auto-cancel after 4 s if user doesn't confirm
-      setTimeout(() => setConfirmingDelete(false), 4000);
+      deleteTimerRef.current = setTimeout(() => setConfirmingDelete(false), 4000);
       return;
     }
     // Second click: actually delete
+    if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
     void handleDeleteConfirm();
   };
 
   const handleDeleteConfirm = async () => {
+    if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
     setDeleting(true);
     try {
       await onDelete(link.id);
@@ -94,6 +106,7 @@ export function LinkCard({
 
   const cancelDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
     setConfirmingDelete(false);
   };
 
@@ -267,3 +280,5 @@ export function LinkCard({
     </div>
   );
 }
+
+export const LinkCard = React.memo(LinkCardComponent);

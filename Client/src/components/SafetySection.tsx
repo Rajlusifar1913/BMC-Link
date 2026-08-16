@@ -25,7 +25,7 @@ export function SafetySection({ onOpenSafetyModal }: SafetySectionProps) {
           <motion.div
             initial={{ opacity: 0, x: -40 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: false, margin: "-60px" }}
+            viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.6, ease: "easeOut" }}
             className="flex flex-col gap-6"
           >
@@ -43,31 +43,29 @@ export function SafetySection({ onOpenSafetyModal }: SafetySectionProps) {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+              <button
+                type="button"
                 onClick={() => onOpenSafetyModal?.("privacy")}
-                className="flex items-center justify-between gap-3 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs px-5 py-3.5 rounded-2xl border border-white/10 transition-all shadow-sm"
+                className="flex items-center justify-between gap-3 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs px-5 py-3.5 rounded-2xl border border-white/10 transition-all shadow-sm active:scale-95"
               >
                 <div className="flex items-center gap-2">
                   <Lock className="w-4 h-4 text-purple-400" />
                   <span>Privacy Policy & Security</span>
                 </div>
                 <ChevronRight className="w-4 h-4 text-gray-400" />
-              </motion.button>
+              </button>
 
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+              <button
+                type="button"
                 onClick={() => onOpenSafetyModal?.("tokens")}
-                className="flex items-center justify-between gap-3 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs px-5 py-3.5 rounded-2xl border border-white/10 transition-all shadow-sm"
+                className="flex items-center justify-between gap-3 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs px-5 py-3.5 rounded-2xl border border-white/10 transition-all shadow-sm active:scale-95"
               >
                 <div className="flex items-center gap-2">
                   <Key className="w-4 h-4 text-purple-400" />
                   <span>Token Rotation & Cookies</span>
                 </div>
                 <ChevronRight className="w-4 h-4 text-gray-400" />
-              </motion.button>
+              </button>
             </div>
           </motion.div>
 
@@ -75,7 +73,7 @@ export function SafetySection({ onOpenSafetyModal }: SafetySectionProps) {
           <motion.div
             initial={{ opacity: 0, x: 40 }}
             whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: false, margin: "-60px" }}
+            viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
             className="bg-white/5 rounded-3xl p-8 border border-white/10 backdrop-blur-md flex flex-col gap-6 shadow-2xl"
           >
