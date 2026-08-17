@@ -44,7 +44,7 @@ src
 ├── routes/
 ├── utils/
 ├── app.js
-└── server.js
+└── index.js
 ```
 
 Each module contains:
@@ -190,6 +190,8 @@ Swagger documentation is available for all implemented endpoints.
 http://localhost:<PORT>/api-docs
 ```
 
+Swagger is enabled in local development by default and is disabled in production unless `SWAGGER_ENABLED=true`.
+
 The documentation includes:
 
 - Request Body
@@ -221,9 +223,18 @@ Example:
 
 ```env
 PORT=4800
-NODE_ENV="development"
+NODE_ENV=development
 DATABASE_URL="postgresql://postgres:<password>@localhost:5432/<database-name>?schema=public"
 CORS_ORIGIN=http://localhost:4800
+SWAGGER_ENABLED=true
+ENABLE_PAYMENTS=false
+STORAGE_PUBLIC_PATH=storage/public
+
+# Public URLs
+SERVER_URL=http://localhost:4800
+APP_URL=http://localhost:4800
+FRONTEND_URL=http://localhost:5173
+FRONTEND_SUCCESS_URL=http://localhost:5173/dashboard
 
 # Google OAuth
 GOOGLE_CLIENT_ID=
@@ -238,9 +249,41 @@ REFRESH_TOKEN_HASH_SECRET=<64-char-string>
 ACCESS_TOKEN_EXPIRES=15m
 REFRESH_TOKEN_EXPIRES=7d
 
-# Frontend
-FRONTEND_URL=http://localhost:5173
-FRONTEND_SUCCESS_URL=http://localhost:5173/dashboard
+# Razorpay
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+RAZORPAY_WEBHOOK_SECRET=
+```
+
+Production example:
+
+```env
+NODE_ENV=production
+PORT=4900
+DATABASE_URL=postgresql://postgres:<password>@<host>:5432/<database-name>?schema=public
+CORS_ORIGIN=https://your-frontend-domain.com
+SWAGGER_ENABLED=false
+ENABLE_PAYMENTS=true
+STORAGE_PUBLIC_PATH=storage/public
+
+# Public URLs
+SERVER_URL=https://your-backend-domain.com
+APP_URL=https://your-backend-domain.com
+FRONTEND_URL=https://your-frontend-domain.com
+FRONTEND_SUCCESS_URL=https://your-frontend-domain.com/dashboard
+
+# Google OAuth
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_CALLBACK_URL=https://your-backend-domain.com/api/v1/auth/google/callback
+
+# JWT & Cryptography
+JWT_ACCESS_SECRET=<64-char-string>
+JWT_REFRESH_SECRET=<64-char-string>
+REFRESH_TOKEN_HASH_SECRET=<64-char-string>
+
+ACCESS_TOKEN_EXPIRES=15m
+REFRESH_TOKEN_EXPIRES=7d
 
 # Razorpay
 RAZORPAY_KEY_ID=
@@ -264,12 +307,20 @@ npx prisma generate
 npx prisma migrate dev
 ```
 
+For production, run the equivalent production-safe migration flow used by your deployment platform before starting the app.
+
 ---
 
 ## Start Development Server
 
 ```bash
 npm run dev
+```
+
+Production start:
+
+```bash
+npm start
 ```
 
 ---
@@ -292,6 +343,8 @@ After successful authentication:
 - Refresh Token cookie is created.
 - User session is stored in the database.
 - Browser is redirected to the configured frontend URL.
+
+In production, the frontend must send cookies with requests and include the `x-csrf-token` header for non-safe methods such as `POST`, `PATCH`, `PUT`, and `DELETE`.
 
 ---
 
@@ -316,6 +369,8 @@ Bearer <ACCESS_TOKEN>
 ```
 
 8. Execute protected endpoints.
+
+If Swagger is disabled in production, use Postman or your frontend app for API testing.
 
 ---
 

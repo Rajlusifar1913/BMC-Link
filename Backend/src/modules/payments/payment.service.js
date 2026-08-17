@@ -2,6 +2,7 @@ import crypto from "crypto";
 import Razorpay from "razorpay";
 import prisma from "../../config/prisma.js";
 import { ApiError } from "../../utils/ApiError.js";
+import { timingSafeEqualHex } from "../../utils/security.js";
 
 const currency = "INR";
 
@@ -73,11 +74,9 @@ class PaymentService {
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || "")
       .update(`${orderId}|${paymentId}`)
       .digest("hex");
-    if (
-      !signature ||
-      !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature))
-    )
+    if (!signature || !timingSafeEqualHex(expected, signature)) {
       throw new ApiError(400, "Invalid payment signature");
+    }
     const duplicate = await prisma.payment.findUnique({
       where: { gatewayPaymentId: paymentId },
     });
@@ -100,11 +99,9 @@ class PaymentService {
       .createHmac("sha256", secret)
       .update(rawBody)
       .digest("hex");
-    if (
-      !signature ||
-      !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature))
-    )
+    if (!signature || !timingSafeEqualHex(expected, signature)) {
       throw new ApiError(400, "Invalid webhook signature");
+    }
     const payload = JSON.parse(rawBody.toString("utf8"));
     const uniqueEventId =
       eventId || crypto.createHash("sha256").update(rawBody).digest("hex");
