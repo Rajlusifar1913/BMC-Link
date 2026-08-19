@@ -335,6 +335,20 @@ export function ChangeAvatarModal({
     }
   }, [isOpen, currentAvatar]);
 
+  // ── Hooks must be called before any early return ──────────────────────────
+  const debouncedSearchQuery = useDebounce(searchQuery, 150);
+
+  const filteredLibrary = useMemo(() => {
+    return AVATAR_LIBRARY.filter((item) => {
+      const matchesCategory = activeCategory === "all" || item.category === activeCategory;
+      const matchesSearch =
+        !debouncedSearchQuery ||
+        item.label.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+        item.category.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [activeCategory, debouncedSearchQuery]);
+
   if (!isOpen) return null;
 
   const handleFileChange = async (file: File | null) => {
@@ -384,19 +398,6 @@ export function ChangeAvatarModal({
       handleFileChange(e.dataTransfer.files[0]);
     }
   };
-
-  const debouncedSearchQuery = useDebounce(searchQuery, 150);
-
-  const filteredLibrary = useMemo(() => {
-    return AVATAR_LIBRARY.filter((item) => {
-      const matchesCategory = activeCategory === "all" || item.category === activeCategory;
-      const matchesSearch =
-        !debouncedSearchQuery ||
-        item.label.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
-        item.category.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
-    });
-  }, [activeCategory, debouncedSearchQuery]);
 
   const handleRemoveAvatar = async () => {
     setSaving(true);
